@@ -1,0 +1,39 @@
+{{template "app" .}}
+
+{{define "content"}}
+<div class="container">
+  <div class="center">
+    <div class="card card-inner mb-2 mv">
+      <h3 class="text-center p-3">Logged in</h3>
+      <form class="text-center" action="/logout" method="post">
+        <input class="btn btn-outline-primary" type="submit" value="Logout">
+        <input type="hidden" name="csrf_token" value="{{index .StringMap "csrf_token"}}">
+      </form>
+      <h3 class="text-center p-3">Hello WebSocket</h3>
+      <div class="text-center">
+        <button class="btn btn-outline-primary" onClick="sendMessage()">hello</button>
+        <p>check console</p>
+      </div>
+      <div id="content">
+        <div id="my-data-plot"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="text/javascript">
+  var sock = null;
+  var myData = "";
+  function sendMessage() {
+    var s = {"Name": "Rio", "Message": "Hello world"};
+    sock.send(JSON.stringify(s));
+  }
+  window.onload = function() {
+    sock = new WebSocket("ws://localhost:8080/chat");
+    sock.onmessage = function(event) {
+      var data = JSON.parse(event.data);
+      myData = data.myData;
+      console.log(data)
+    };
+  };
+</script>
+{{end}}

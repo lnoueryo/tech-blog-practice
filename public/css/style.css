@@ -1,0 +1,20 @@
+.center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-right: -50%;
+  transform: translate(-50%, -50%);
+  max-width: 600px;
+  width: 100%;
+}
+
+.card-inner {
+  padding: 2em 1.5em 1em;
+}
+
+.mv {
+  background-image: url(/static/images/main.jpg);
+  background-size: cover;
+  background-color:rgba(255,255,255,0.8);
+  background-blend-mode:lighten;
+}

@@ -1,0 +1,41 @@
+{{template "app" .}}
+
+{{define "content"}}
+<div class="container">
+  <div class="center">
+    <div class="card card-inner mb-2">
+        <div>{{index .StringMap "message"}}</div>
+      <form action="/sign-up" method="post">
+        <div class="mb-3 row">
+          <label for="name" class="col-sm-2 col-form-label">Name</label>
+          <div class="col-sm-10">
+            <input class="form-control" type="text" name="name" id="name" value="{{index .StringMap "name"}}">
+          </div>
+        </div>
+        <div class="mb-3 row">
+          <label for="email" class="col-sm-2 col-form-label">Email</label>
+          <div class="col-sm-10">
+            <input class="form-control" type="text" name="email" id="email" value="{{index .StringMap "email"}}">
+          </div>
+        </div>
+        <div class="mb-3 row">
+          <label for="password" class="col-sm-2 col-form-label">Password</label>
+          <div class="col-sm-10">
+            <input type="password" class="form-control" name="password" id="password">
+          </div>
+        </div>
+        <div class="mb-3 row">
+          <label for="confirmation" class="col-sm-2 col-form-label">Confirmation</label>
+          <div class="col-sm-10">
+            <input type="password" class="form-control" name="confirmation" id="confirmation">
+          </div>
+        </div>
+        <div class="text-end">
+          <input type="submit" class="btn btn-outline-primary mb-3" value="Sign up">
+        </div>
+      </form>
+    </div>
+    <p class="px-1">if you have an account, <a href="/login">login here</a></p>
+  </div>
+</div>
+{{end}}
