@@ -18,6 +18,7 @@ type AppConfig struct {
 	InProduction bool
 	Addr string
 	Static string
+	Host string
 }
 type APIKey struct {
 	GitHubClientId string
@@ -60,6 +61,7 @@ func readEnv() string {
 func configureLocalSettings() {
 	App.UseCache = false
 	models.ConnectMysql()
+	App.Host = os.Getenv("APP_HOST")
 }
 
 func configureProdSettings() {
@@ -70,6 +72,7 @@ func configureProdSettings() {
 	}
 	App.TemplateCache = tc
 	models.ConnectSqlite3()
+	App.Host = os.Getenv("APP_HOST")
 }
 
 func CreateTemplateCache() (map[string]*template.Template, error) {
