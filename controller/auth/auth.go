@@ -25,7 +25,7 @@ func init() {
 
 func Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		session, err := models.CheckSession(w, r)
+		session, err := models.CheckSession(r)
 		if err == nil {
 			infolog.Print(fmt.Sprintf("%v\t%v\t%v\t%v", r.URL, session.Name, session.Email, r.RemoteAddr))
 			http.Redirect(w, r, "/", 302)
@@ -113,7 +113,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func Register(w http.ResponseWriter, r *http.Request) {
-	session, err := models.CheckSession(w, r)
+	session, err := models.CheckSession(r)
 	if err == nil {
 		infolog.Print(fmt.Sprintf("%v\t%v\t%v\t%v", r.URL, session.Name, session.Email, r.RemoteAddr))
 		http.Redirect(w, r, "/", 302)

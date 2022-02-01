@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/http"
 	"time"
-
 	"github.com/jinzhu/gorm"
 )
 
@@ -12,6 +11,7 @@ type User struct {
 	Id        int `gorm:"AUTO_INCREMENT"json:"id"`
 	Name      string `json:"name"`
 	Email     string `json:"email"`
+	Posts     []Post
 	Password  string `json:"password"`
 	CreatedAt time.Time `json:"created_at"`
 }

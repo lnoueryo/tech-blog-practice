@@ -14,7 +14,7 @@ import (
 
 type Session struct {
 	Id        int
-	Uuid      string
+	UserId    int
 	Name      string
 	Email     string
 	CreatedAt time.Time
@@ -22,13 +22,15 @@ type Session struct {
 }
 
 func CreateSession(user User) (cryptext string, err error) {
+	sessionId := string(user.Id) + timeToString(user.CreatedAt)
 	s := Session {
 		Id: user.Id,
+		// Id: sessionId,
+		UserId: user.Id,
 		Name: user.Name,
 		Email: user.Email,
 		CreatedAt: time.Now(),
 	}
-	sessionId := string(user.Id) + timeToString(user.CreatedAt)
 	hashedSessionId := sha256.Sum256([]byte(sessionId))
 	cryptext = fmt.Sprintf("%x", hashedSessionId)
 	filepath := fmt.Sprintf("./session/%v.txt", cryptext)
@@ -46,7 +48,7 @@ func CreateSession(user User) (cryptext string, err error) {
 }
 
 // Checks if the user is logged in and has a session, if not err is not nil
-func CheckSession(w http.ResponseWriter, r *http.Request) (Session, error) {
+func CheckSession(r *http.Request) (Session, error) {
 	cookie, err := r.Cookie("_cookie")
 	session := Session{}
 	if err == nil {

@@ -19,6 +19,7 @@ type TemplateData struct {
 	Error     string
 	JSON      []byte
 	Users     []models.User
+	Posts	  []models.Post
 	// Form      *forms.Form
 }
 

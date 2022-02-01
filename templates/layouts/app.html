@@ -19,15 +19,20 @@
   <body class="bg-light">
     <header class="d-flex justify-content-between bg-secondary p-3">
       <div>
-        <h2 class="text-warning">Title</h2>
+        <h2 class="text-warning">Tech Blog</h2>
       </div>
-      <!-- <div class="d-flex align-items-center">
+      <div class="d-flex align-items-center">
         <div>
           <input type="text">
           <button>★</button>
           <img src="" alt="">
         </div>
-      </div> -->
+        <form class="text-center" action="/logout" method="post">
+          <input class="btn btn-outline-danger" type="submit" value="Logout">
+          <input type="hidden" name="csrf_token" value="{{index .StringMap "csrf_token"}}">
+        </form>
+        <a class="btn btn-primary" href="/post">post</a>
+      </div>
     </header>
     {{ if index .StringMap "auth" }}
     <ul class="nav nav-tabs">

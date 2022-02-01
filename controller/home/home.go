@@ -1,12 +1,14 @@
 package home
 
 import (
+	"errors"
 	"fmt"
 	"helloworld/config"
 	"helloworld/controller"
 	"helloworld/models"
 	"log"
 	"net/http"
+	"github.com/jinzhu/gorm"
 	"golang.org/x/net/websocket"
 )
 
@@ -18,8 +20,12 @@ type Message struct {
 	Message string
 }
 
+var errorlog *log.Logger
+var DB *gorm.DB
+
 func init() {
 	infolog = config.App.InfoLog
+	DB = models.DB
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -33,17 +39,29 @@ func Index(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// session
-	session, err := models.CheckSession(w, r)
+	session, err := models.CheckSession(r)
 	if err != nil {
 		fmt.Sprintf("%v\t%v", r.URL, r.RemoteAddr)
 		http.Redirect(w, r, "/login", 302)
 		return
 	}
 	infolog.Print(fmt.Sprintf("%v\t%v\t%v\t%v", r.URL, session.Name, session.Email, r.RemoteAddr))
+	var posts []models.Post
+	result := DB.Preload("User").Find(&posts)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		errorlog.Print(result)
+	}
+	var users []models.User
+	result = DB.Preload("Posts").Find(&users)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		errorlog.Print(result)
+	}
 	stringMap := make(map[string]string)
 	stringMap["csrf_token"] = session.CSRFToken
 	controller.RenderTemplate(w, r, "index.html", &controller.TemplateData{
 		StringMap: stringMap,
+		Posts: posts,
+		Users: users,
 	})
 }
 

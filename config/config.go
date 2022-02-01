@@ -38,7 +38,6 @@ func init() {
 	} else {
 		configureProdSettings()
 	}
-	App.Addr = ":8080"
 	App.Static = "public"
 	App.InfoLog = infolog
 	App.ErrorLog = errorlog
@@ -62,6 +61,7 @@ func configureLocalSettings() {
 	App.UseCache = false
 	models.ConnectMysql()
 	App.Host = os.Getenv("APP_HOST")
+	App.Addr = "127.0.0.1:8080"
 }
 
 func configureProdSettings() {
@@ -73,6 +73,7 @@ func configureProdSettings() {
 	App.TemplateCache = tc
 	models.ConnectSqlite3()
 	App.Host = os.Getenv("APP_HOST")
+	App.Addr = ":8080"
 }
 
 func CreateTemplateCache() (map[string]*template.Template, error) {

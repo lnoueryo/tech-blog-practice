@@ -2,6 +2,37 @@
 
 {{define "content"}}
 <div class="container">
+  <div class="d-flex">
+    <div>
+      {{range $index, $user := .Users}}
+      <a style="text-decoration: none;" href="">
+        <div class="card user-card">
+          <div class="d-flex align-items-center">
+            <div class="w10 text-center">
+              <div>{{$user.Id}}</div>
+            </div>
+            <div class="w20 text-center">
+              <img src="/static/images/main.jpg" alt="カードの画像" class="avatar card-img-top">
+            </div>
+            <div class="w20 text-center">
+              <div>{{$user.Name}}</div>
+            </div>
+            <div class="font14 w50 text-center">
+              <div>{{len $user.Posts}}投稿</div>
+            </div>
+          </div>
+        </div>
+      </a>
+      {{end}}
+    </div>
+    <div>
+      {{range $index, $post := .Posts}}
+      <div class="card">
+        <h3>{{$post.Title}}</h3>
+      </div>
+      {{end}}
+    </div>
+  </div>
   <div class="center">
     <div class="card card-inner mb-2 mv">
       <h3 class="text-center p-3">Logged in</h3>
