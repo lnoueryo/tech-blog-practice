@@ -19,6 +19,9 @@
   background-blend-mode:lighten;
 }
 
+a {
+  text-decoration: none;
+}
 .w100 {
   width: 100%;
 }
@@ -59,4 +62,51 @@
   object-fit: cover;
   object-position: 50% 50%;
   border-radius: 50%;
+}
+
+.left-side {
+  width: 25%;
+}
+
+.right-side {
+  width: 25%;
+}
+
+.main {
+  width: 50%;
+}
+
+
+@media screen and (max-width:1200px) { 
+  .left-side {
+    order: 2;
+    width: 40%;
+  }
+  
+  .right-side {
+    order: 3;
+    width: 100%;
+  }
+  
+  .main {
+    order: 1;
+    width: 60%;
+  }
+}
+
+@media screen and (max-width:768px) { 
+  .left-side {
+    order: 2;
+    width: 100%;
+  }
+  
+  .right-side {
+    order: 3;
+    width: 100%;
+  }
+  
+  .main {
+    order: 1;
+    width: 100%;
+  }
 }

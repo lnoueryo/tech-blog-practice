@@ -1,0 +1,43 @@
+{{template "app" .}}
+
+{{define "content"}}
+<div class="container">
+  <div class="" style="width: 100%;max-width: 800px;margin: auto">
+    {{$user := index .Users 0}}
+      <div class="card">
+        <div class="d-flex">
+          <div class="text-center">
+            <img src="/media/user/{{$user.Image}}" alt="カードの画像" style="width: 300px;height: 300px;object-fit: cover;">
+          </div>
+          <div class="text-center w100 py-4">
+            <h3>Name</h3>
+            <h5>{{$user.Name}}</h5>
+            <h3>Email</h3>
+            <h5>{{$user.Email}}</h5>
+            <h3>Post</h3>
+            <h5>{{len $user.Posts}}</h5>
+          </div>
+        </div>
+      </div>
+      <div class="my-2">
+        {{range $index, $post := $user.Posts}}
+        <a style="text-decoration: none;" href="/users/{{$user.Id}}/{{$post.Id}}">
+          <div class="card mb-3">
+            <div class="d-flex">
+              <div>
+                <img src="/media/post/{{$post.Image}}" alt="..." class="rounded-start" style="object-fit: cover;width: 200px;height: 200px;">
+              </div>
+              <div class="card-body" style="flex-direction: column;display: flex;">
+                <h4 class="card-title">{{$post.Title}}</h4>
+                <p class="card-title">{{$post.Language}}</p>
+                <p class="card-text"><small class="text-muted">最終更新{{$post.CreatedAt}}</small></p>
+              </div>
+            </div>
+          </div>
+        </a>
+        {{end}}
+      </div>
+  </div>
+</div>
+
+{{end}}

@@ -3,3 +3,4 @@ commands
 session
 .env
 .env.dev
+upload

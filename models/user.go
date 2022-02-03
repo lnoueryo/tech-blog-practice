@@ -11,16 +11,18 @@ type User struct {
 	Id        int `gorm:"AUTO_INCREMENT"json:"id"`
 	Name      string `json:"name"`
 	Email     string `json:"email"`
-	Posts     []Post
 	Password  string `json:"password"`
+	Image     string `json:"image"`
+	Posts 	  []Post `json:"posts"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
 func NewUser(r *http.Request) User {
 	name := r.Form.Get("name")
 	email := r.Form.Get("email")
+	image := r.Form.Get("image")
 	password := Encrypt(r.Form.Get("password"))
-	user := User{Name: name, Email: email, Password: password}
+	user := User{Name: name, Email: email, Image: image, Password: password}
 	return user
 }
 

@@ -2,17 +2,17 @@
 
 {{define "content"}}
 <div class="container">
-  <div class="d-flex">
-    <div>
+  <div class="d-flex flex-wrap">
+    <div class="left-side px-2">
       {{range $index, $user := .Users}}
-      <a style="text-decoration: none;" href="">
+      <a style="text-decoration: none;" href="/users/{{$user.Id}}">
         <div class="card user-card">
           <div class="d-flex align-items-center">
             <div class="w10 text-center">
               <div>{{$user.Id}}</div>
             </div>
             <div class="w20 text-center">
-              <img src="/static/images/main.jpg" alt="カードの画像" class="avatar card-img-top">
+              <img src="/media/user/{{$user.Image}}" alt="カードの画像" class="avatar card-img-top">
             </div>
             <div class="w20 text-center">
               <div>{{$user.Name}}</div>
@@ -25,29 +25,57 @@
       </a>
       {{end}}
     </div>
-    <div>
+    <div class="main px-2">
       {{range $index, $post := .Posts}}
-      <div class="card">
-        <h3>{{$post.Title}}</h3>
-      </div>
+      <a style="text-decoration: none;" href="/users/{{$post.User.Id}}/{{$post.Id}}">
+        <div class="card mb-3">
+          <div class="d-flex">
+            <div>
+              <img src="/media/post/{{$post.Image}}" alt="..." class="rounded-start" style="object-fit: cover;width: 200px;height: 200px;">
+            </div>
+            <div class="card-body" style="flex-direction: column;display: flex;">
+              <h4 class="card-title">{{$post.Title}}</h4>
+              <p class="card-title">{{$post.Language}}</p>
+              <p class="card-text"><small class="text-muted">最終更新{{$post.CreatedAt}}</small></p>
+              <div class="d-flex align-items-center" style="margin-top: auto;position: relative;">
+                <a style="text-decoration: none;position: absolute;top: 0;bottom: 0;right: 0;left: 0;display: block;" href="/users/{{$post.User.Id}}"></a>
+                <div class="w10 text-center">
+                  <div>{{$post.User.Id}}</div>
+                </div>
+                <div class="w20 text-center">
+                  <img src="/media/user/{{$post.User.Image}}" alt="カードの画像" class="avatar card-img-top">
+                </div>
+                <div class="w20 text-center">
+                  <div>{{$post.User.Name}}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a>
       {{end}}
     </div>
-  </div>
-  <div class="center">
-    <div class="card card-inner mb-2 mv">
-      <h3 class="text-center p-3">Logged in</h3>
-      <form class="text-center" action="/logout" method="post">
-        <input class="btn btn-outline-primary" type="submit" value="Logout">
-        <input type="hidden" name="csrf_token" value="{{index .StringMap "csrf_token"}}">
-      </form>
-      <h3 class="text-center p-3">Hello WebSocket</h3>
-      <div class="text-center">
-        <button class="btn btn-outline-primary" onClick="sendMessage()">hello</button>
-        <p>check console</p>
-      </div>
-      <div id="content">
-        <div id="my-data-plot"></div>
-      </div>
+    <div class="right-side px-2">
+      {{range $index, $user := .Users}}
+      <a style="text-decoration: none;" href="/users/{{$user.Id}}">
+        <div class="card user-card">
+          <div class="d-flex align-items-center">
+            <div class="w10 text-center">
+              <div>{{$user.Id}}</div>
+            </div>
+            <div class="w20 text-center">
+              <img src="/media/user/{{$user.Image}}" alt="カードの画像" class="avatar card-img-top">
+            </div>
+            <div class="w20 text-center">
+              <div>{{$user.Name}}</div>
+            </div>
+            <div class="font14 w50 text-center">
+              <div>{{len $user.Posts}}投稿</div>
+            </div>
+          </div>
+        </div>
+      </a>
+      {{end}}
     </div>
   </div>
 </div>
