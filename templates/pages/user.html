@@ -30,7 +30,7 @@
               <div class="card-body" style="flex-direction: column;display: flex;">
                 <h4 class="card-title">{{$post.Title}}</h4>
                 <p class="card-title">{{$post.Language}}</p>
-                <p class="card-text"><small class="text-muted">最終更新{{$post.CreatedAt}}</small></p>
+                <p class="card-text"><small class="text-muted">最終更新 {{$post.CreatedAt.Format "2006/01/02"}}</small></p>
               </div>
             </div>
           </div>

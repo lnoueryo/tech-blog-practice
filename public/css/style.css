@@ -76,6 +76,21 @@ a {
   width: 50%;
 }
 
+.user-bottom {
+  margin-top: auto;
+  position: relative;
+  border: #f8f9fa 1px solid;
+  border-radius: 5px;
+  background-color: #f8f9fa;
+  padding: 7px;
+  transition: all .5s;
+}
+
+.user-bottom:hover {
+  opacity: 0.5;
+  transition: all .5s;
+}
+
 
 @media screen and (max-width:1200px) { 
   .left-side {

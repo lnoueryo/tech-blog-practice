@@ -36,8 +36,8 @@
             <div class="card-body" style="flex-direction: column;display: flex;">
               <h4 class="card-title">{{$post.Title}}</h4>
               <p class="card-title">{{$post.Language}}</p>
-              <p class="card-text"><small class="text-muted">最終更新{{$post.CreatedAt}}</small></p>
-              <div class="d-flex align-items-center" style="margin-top: auto;position: relative;">
+              <p class="card-text"><small class="text-muted">最終更新 {{$post.CreatedAt.Format "2006/01/02"}}</small></p>
+              <div class="d-flex align-items-center user-bottom">
                 <a style="text-decoration: none;position: absolute;top: 0;bottom: 0;right: 0;left: 0;display: block;" href="/users/{{$post.User.Id}}"></a>
                 <div class="w10 text-center">
                   <div>{{$post.User.Id}}</div>
