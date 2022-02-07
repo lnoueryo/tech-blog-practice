@@ -1,18 +1,13 @@
-package home
+package controller
 
 import (
-	"errors"
 	"fmt"
-	"helloworld/config"
-	"helloworld/controller"
 	"helloworld/models"
 	"log"
 	"net/http"
-	"github.com/jinzhu/gorm"
 	"golang.org/x/net/websocket"
 )
 
-var infolog *log.Logger
 var ws_array []*websocket.Conn // *websocket.Connを入れる配列
 
 type Message struct {
@@ -20,15 +15,10 @@ type Message struct {
 	Message string
 }
 
-var errorlog *log.Logger
-var DB *gorm.DB
+type Home struct {}
 
-func init() {
-	infolog = config.App.InfoLog
-	DB = models.DB
-}
 
-func Index(w http.ResponseWriter, r *http.Request) {
+func (h *Home)Index(w http.ResponseWriter, r *http.Request) {
 	// return Not found when the path is not "/" like "/123"
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
@@ -38,34 +28,33 @@ func Index(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+
 	// session
-	session, err := models.CheckSession(r)
-	if err != nil {
-		fmt.Sprintf("%v\t%v", r.URL, r.RemoteAddr)
+	session, err := models.CheckSession(r); if err != nil {
 		http.Redirect(w, r, "/login", 302)
+		infolog.Print(fmt.Sprintf("%v\t%v", r.URL, r.RemoteAddr))
 		return
 	}
-	infolog.Print(fmt.Sprintf("%v\t%v\t%v\t%v", r.URL, session.Name, session.Email, r.RemoteAddr))
-	var posts []models.Post
-	result := DB.Preload("User").Find(&posts)
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		errorlog.Print(result)
+	infolog.Print(fmt.Sprintf("%v\t%v\t%v\t%v\t%v", r.Method, r.URL, session.Name, session.Email, r.RemoteAddr))
+
+	//users
+	users, err := models.UserAll(); if err != nil {
+		errorlog.Print(err)
 	}
-	var users []models.User
-	result = DB.Preload("Posts").Find(&users)
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		errorlog.Print(result)
+
+	//posts
+	posts, err := models.PostAll(); if err != nil {
+		errorlog.Print(err)
 	}
-	stringMap := make(map[string]string)
-	stringMap["csrf_token"] = session.CSRFToken
-	controller.RenderTemplate(w, r, "index.html", &controller.TemplateData{
-		StringMap: stringMap,
+
+	RenderTemplate(w, r, "index.html", &TemplateData{
+		CSRFToken: session.GenerateCSRFToken(),
 		Posts: posts,
 		Users: users,
 	})
 }
 
-func Chat(ws *websocket.Conn) {
+func (h *Home)Chat(ws *websocket.Conn) {
 	ws_array = append(ws_array, ws)
     data_receive(ws)
 }

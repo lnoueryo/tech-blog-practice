@@ -1,40 +1,30 @@
-package users
+package controller
 
 import (
 	"errors"
 	"fmt"
-	"helloworld/config"
-	"helloworld/controller"
 	"helloworld/models"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
 	"github.com/jinzhu/gorm"
 )
 
-var infolog *log.Logger
-var errorlog *log.Logger
-var DB *gorm.DB
+type Users struct {}
 
-func init() {
-	infolog = config.App.InfoLog
-	DB = models.DB
-}
-
-func Index(w http.ResponseWriter, r *http.Request) {
+func (u *Users)Index(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimPrefix(r.URL.Path, "/users/") // URLを切り取ってなんとかする
 	i := strings.Index(path, "/")
 	// session
-	session, err := models.CheckSession(r)
+	s, err := models.CheckSession(r)
 	if err != nil {
 		fmt.Sprintf("%v\t%v", r.URL, r.RemoteAddr)
 		http.Redirect(w, r, "/login", 302)
 		return
 	}
-	infolog.Print(fmt.Sprintf("%v\t%v\t%v\t%v", r.URL, session.Name, session.Email, r.RemoteAddr))
+	infolog.Print(fmt.Sprintf("%v\t%v\t%v\t%v\t%v", r.Method, r.URL, s.Name, s.Email, r.RemoteAddr))
 	stringMap := make(map[string]string)
-	stringMap["csrf_token"] = session.CSRFToken
+	stringMap["csrf_token"] = s.CSRFToken
 	if i == -1 {
 		var users []models.User
 		if path == "" { //usersのみ
@@ -42,21 +32,21 @@ func Index(w http.ResponseWriter, r *http.Request) {
 			if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 				errorlog.Print(result)
 			}
-			controller.RenderTemplate(w, r, "users.html", &controller.TemplateData{
+			RenderTemplate(w, r, "users.html", &TemplateData{
 				StringMap: stringMap,
 				Users: users,
 			})
 			return
 		}
 		 //usersのあとにキーがある場合
-		Show(w, r, path, session)
+		u.Show(w, r, path, s)
 		return
 	}
 	userIdStr, path := path[:i], path[i:]
 	infolog.Print(userIdStr)
 	infolog.Print(path)
 	if path == "/" {
-		Show(w, r, userIdStr, session)
+		u.Show(w, r, userIdStr, s)
 		return
 	}
 	userId, _ := strconv.Atoi(userIdStr)
@@ -77,14 +67,14 @@ func Index(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	controller.RenderTemplate(w, r, "diary.html", &controller.TemplateData{
+	RenderTemplate(w, r, "diary.html", &TemplateData{
 		StringMap: stringMap,
 		Users: users,
 		Posts: posts,
 	})
 }
 
-func Show(w http.ResponseWriter, r *http.Request, id string, session models.Session) {
+func (u *Users)Show(w http.ResponseWriter, r *http.Request, id string, session models.Session) {
 	var users []models.User
 	userId, _ := strconv.Atoi(id)
 	result := DB.Preload("Posts").First(&users, userId)
@@ -97,7 +87,7 @@ func Show(w http.ResponseWriter, r *http.Request, id string, session models.Sess
 	}
 	stringMap := make(map[string]string)
 	stringMap["csrf_token"] = session.CSRFToken
-	controller.RenderTemplate(w, r, "user.html", &controller.TemplateData{
+	RenderTemplate(w, r, "user.html", &TemplateData{
 		StringMap: stringMap,
 		Users: users,
 	})

@@ -1,4 +1,4 @@
-package auth
+package oauth
 
 import (
 	"encoding/json"
@@ -30,21 +30,24 @@ func GithubOAuth(w http.ResponseWriter, r *http.Request) (*GithubOAuthInfo, erro
 	user := NewGithubOAuthInfo()
 	err := r.ParseForm()
 	if err != nil {
-		errorlog.Print("could not parse query: %v", err)
+		// errorlog.Print("could not parse query: %v", err)
+		return user, err
 	}
 	code := r.FormValue("code")
 	err = user.tokenRequest(code)
 	if err != nil {
-		errorlog.Println(err)
+		return user, err
+		// errorlog.Println(err)
 	}
 	err = user.apiRequest()
 	if err != nil {
-		errorlog.Print(err)
+		return user, err
+		// errorlog.Print(err)
 	}
 	return user, err
 }
 
-func (user *GithubOAuthInfo)tokenRequest(code string) (err error) {
+func (u *GithubOAuthInfo)tokenRequest(code string) (err error) {
 	clientID := config.ApiKey.GitHubClientId
 	clientSecret := config.ApiKey.GitHubSecretId
 
@@ -53,7 +56,8 @@ func (user *GithubOAuthInfo)tokenRequest(code string) (err error) {
 	reqURL := fmt.Sprintf("https://github.com/login/oauth/access_token?client_id=%s&client_secret=%s&code=%s", clientID, clientSecret, code)
 	req, err := http.NewRequest(http.MethodPost, reqURL, nil)
 	if err != nil {
-		errorlog.Print(err)
+		return err
+		// errorlog.Print(err)
 	}
 	client := &http.Client{}
 	header := http.Header{}
@@ -62,42 +66,48 @@ func (user *GithubOAuthInfo)tokenRequest(code string) (err error) {
 	req.Header = header
 	resp, err := client.Do(req)
 	if err != nil {
-		errorlog.Printf("request err: %s", err)
+		return err
+		// errorlog.Printf("request err: %s", err)
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		errorlog.Printf("request err: %s", err)
+		return err
+		// errorlog.Printf("request err: %s", err)
 	}
-	if err = json.Unmarshal(body, &user); err != nil {
+	if err = json.Unmarshal(body, &u); err != nil {
 		fmt.Println(err)
 	}
 	return
 }
 
-func (user *GithubOAuthInfo)apiRequest() (err error) {
+func (u *GithubOAuthInfo)apiRequest() (err error) {
 	userAPI := "https://api.github.com/user"
 
 	req, err := http.NewRequest("GET", userAPI, nil)
 	if err != nil {
-		errorlog.Print(err)
+		return err
+		// errorlog.Print(err)
 	}
 	// 取得したアクセストークンをHeaderにセットしてリソースサーバにリクエストを送る
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", user.AccessToken))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", u.AccessToken))
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil || resp.StatusCode != 200 {
 		log.Printf("http status code is %d, err: %s", resp.StatusCode, err)
-		errorlog.Print(err)
+		return err
+		// errorlog.Print(err)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		errorlog.Print(err)
+		return err
+		// errorlog.Print(err)
 	}
-	if err = json.Unmarshal(body, &user); err != nil {
-		errorlog.Print(err)
+	if err = json.Unmarshal(body, &u); err != nil {
+		return err
+		// errorlog.Print(err)
 	}
 	return
 }

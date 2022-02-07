@@ -2,11 +2,12 @@ package controller
 
 import (
 	"bytes"
+	"helloworld/config"
+	"helloworld/models"
 	"html/template"
 	"log"
 	"net/http"
-	"helloworld/config"
-	"helloworld/models"
+	"github.com/jinzhu/gorm"
 )
 
 type TemplateData struct {
@@ -20,7 +21,19 @@ type TemplateData struct {
 	JSON      []byte
 	Users     []models.User
 	Posts	  []models.Post
+	CSRFToken string
 	// Form      *forms.Form
+}
+
+var infolog *log.Logger
+var errorlog *log.Logger
+var DB *gorm.DB
+
+
+func init() {
+	infolog = config.App.InfoLog
+	errorlog = config.App.ErrorLog
+	DB = models.DB
 }
 
 func RenderTemplate(w http.ResponseWriter, r *http.Request, tmpl string, td *TemplateData) {
@@ -32,21 +45,17 @@ func RenderTemplate(w http.ResponseWriter, r *http.Request, tmpl string, td *Tem
 	}
 	t, ok := tc[tmpl]
 	if !ok {
-		log.Fatal("could not get template")
+		errorlog.Print("could not get template")
 	}
 
 	buf := new(bytes.Buffer)
-
-	//csrftoken
-	// td = AddDefaultData(td, r)
 
 	_ = t.Execute(buf, td)
 
 	_, err := buf.WriteTo(w)
 
 	if err != nil {
-		log.Fatal(err)
+		errorlog.Print("could not get template")
 	}
 }
-
 
