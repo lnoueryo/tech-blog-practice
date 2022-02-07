@@ -7,7 +7,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/joho/godotenv"
 	"os"
-	"helloworld/models"
 )
 
 type AppConfig struct {
@@ -18,62 +17,64 @@ type AppConfig struct {
 	InProduction bool
 	Addr string
 	Static string
+	Media string
 	Host string
 }
 type APIKey struct {
 	GitHubClientId string
 	GitHubSecretId string
 }
+
 var App AppConfig
 var ApiKey APIKey
 var infolog *log.Logger
 var errorlog *log.Logger
+
 func init() {
-	infolog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
-	errorlog = log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
-	appEnv := readEnv()
+
+	commonSettings()
+
+	appEnv, err := readEnvFile(); if err!= nil {
+		// if .env is not in local and production environment
+		panic("Not found .env")
+	}
+
 	if appEnv == "local" {
 		configureLocalSettings()
-		// configureProdSettings()
 	} else {
 		configureProdSettings()
 	}
-	App.Static = "public"
+}
+
+func readEnvFile() (string, error) {
+
+	// local
+    err := godotenv.Load(".env.dev"); if err == nil {
+		return os.Getenv("APP_ENV"), nil
+	}
+
+	// production
+	err = godotenv.Load(".env"); if err == nil {
+		return os.Getenv("APP_ENV"), nil
+	}
+
+	return os.Getenv("APP_ENV"), err
+}
+
+func commonSettings() {
+	// log
+	infolog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	errorlog = log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 	App.InfoLog = infolog
 	App.ErrorLog = errorlog
+
+	// file path
+	App.Static = "public"
+	App.Media = "upload"
+
+	// APIKey
 	ApiKey.GitHubClientId = os.Getenv("GITHUB_CLIENT_ID")
 	ApiKey.GitHubSecretId = os.Getenv("GITHUB_SECRET_ID")
-}
-
-func readEnv() string {
-    err := godotenv.Load(".env.dev")
-    if err != nil {
-		err = godotenv.Load(".env")
-		if err != nil {
-			// .env読めなかった場合の処理
-			panic("Not found .env")
-		}
-    }
-	return os.Getenv("APP_ENV")
-}
-
-func configureLocalSettings() {
-	App.UseCache = false
-	models.ConnectMysql()
-	App.Host = os.Getenv("APP_HOST")
-	App.Addr = "127.0.0.1:8080"
-}
-
-func configureProdSettings() {
-	App.UseCache = true
-	tc, err := CreateTemplateCache()
-	if err != nil {
-		errorlog.Fatal(err)
-	}
-	App.TemplateCache = tc
-	models.ConnectSqlite3()
-	App.Host = os.Getenv("APP_HOST")
-	App.Addr = ":8080"
 }
 
 func CreateTemplateCache() (map[string]*template.Template, error) {

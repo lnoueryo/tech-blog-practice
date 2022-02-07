@@ -26,17 +26,26 @@ func NewPost(r *http.Request) Post {
 	content := r.Form.Get("content")
 	language := r.Form.Get("language")
 	image := r.Form.Get("image")
-	session, err := CheckSession(r)
+	s, err := CheckSession(r)
 	if err != nil {
 		fmt.Println(err)
 	}
-	userId := session.UserId
+	userId := s.UserId
 	post := Post{Title: title, Content: content, Language: language, UserID: userId, Image: image}
 	return post
 }
 
-func (post *Post) Create() error {
-	result := DB.Create(post)
+func PostAll() ([]Post, error) {
+	var posts []Post
+	result := DB.Preload("User").Find(&posts)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return posts, result.Error
+	}
+	return posts, nil
+}
+
+func (p *Post) Create() error {
+	result := DB.Create(p)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return result.Error
 	}

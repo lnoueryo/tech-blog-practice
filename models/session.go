@@ -13,7 +13,7 @@ import (
 )
 
 type Session struct {
-	Id        int
+	Id        string
 	UserId    int
 	Name      string
 	Email     string
@@ -21,52 +21,51 @@ type Session struct {
 	CSRFToken string
 }
 
-func CreateSession(user User) (cryptext string, err error) {
-	sessionId := string(user.Id) + timeToString(user.CreatedAt)
+func CreateSession(u User) (cryptext string, err error) {
+	sessionId := string(u.Id) + timeToString(u.CreatedAt)
+	hashedByteSessionId := sha256.Sum256([]byte(sessionId))
+	hashedSessionId := fmt.Sprintf("%x", hashedByteSessionId)
 	s := Session {
-		Id: user.Id,
-		// Id: sessionId,
-		UserId: user.Id,
-		Name: user.Name,
-		Email: user.Email,
+		Id: hashedSessionId,
+		UserId: u.Id,
+		Name: u.Name,
+		Email: u.Email,
 		CreatedAt: time.Now(),
 	}
-	hashedSessionId := sha256.Sum256([]byte(sessionId))
-	cryptext = fmt.Sprintf("%x", hashedSessionId)
-	filepath := fmt.Sprintf("./session/%v.txt", cryptext)
+	filepath := fmt.Sprintf("./session/%v.txt", hashedSessionId)
     f, err := os.Create(filepath)
+	defer f.Close()
     if err != nil {
-        log.Fatal(err)
+		return hashedSessionId, err
     }
-    defer f.Close()
     enc := gob.NewEncoder(f)
 
     if err := enc.Encode(s); err != nil {
-        log.Fatal(err)
+        return hashedSessionId, err
     }
-	return
+	return hashedSessionId, nil
 }
 
 // Checks if the user is logged in and has a session, if not err is not nil
 func CheckSession(r *http.Request) (Session, error) {
 	cookie, err := r.Cookie("_cookie")
-	session := Session{}
+	s := Session{}
 	if err == nil {
 		filepath := fmt.Sprintf("./session/%v.txt", cookie.Value)
 		isSession := IsSession(filepath)
 		if isSession {
-			session.readSession(filepath)
-			session.AddCSRFToken(filepath)
-			return session, err
+			s.readSession(filepath)
+			return s, err
 		} else {
 			err = errors.New("invalid session")
 		}
 	}
-	return session, err
+	return s, err
 }
 
-func (session *Session)AddCSRFToken(filepath string) {
-	session.CSRFToken, _ = MakeRandomStr(32)
+func (s *Session)GenerateCSRFToken() (string) {
+	filepath := fmt.Sprintf("./session/%v.txt", s.Id)
+	s.CSRFToken, _ = MakeRandomStr(32)
     f, err := os.Create(filepath)
     if err != nil {
         log.Fatal(err)
@@ -74,49 +73,49 @@ func (session *Session)AddCSRFToken(filepath string) {
     defer f.Close()
     enc := gob.NewEncoder(f)
 
-    if err := enc.Encode(&session); err != nil {
+    if err := enc.Encode(&s); err != nil {
         log.Fatal(err)
     }
-	return
+	return s.CSRFToken
 }
 
-func Auth(w http.ResponseWriter, r *http.Request) (bool, error) {
+func (s *Session)CheckCSRFToken(r *http.Request) bool {
 	err := r.ParseForm()
 	if err != nil {
 		log.Print(err, "Cannot find user")
 	}
-	cookie, err := r.Cookie("_cookie")
-	if err == nil {
-		filename := fmt.Sprintf("./session/%v.txt", cookie.Value)
-		isSession := IsSession(filename)
-		session := Session{}
-		if isSession {
-			session.readSession(filename)
-			if session.CSRFToken == r.Form.Get("csrf_token") {
-				return true, nil
-			}
-			err = errors.New("invalid csrf_token")
-		}
+	if s.CSRFToken != r.Form.Get("csrf_token") {
+		return false
 	}
-	return false, err
+	return true
 }
 
 // Checks if the user is logged in and has a session, if not err is not nil
-func DeleteSession(w http.ResponseWriter, r *http.Request) (session Session, err error) {
+func (s *Session)DeleteSession(w http.ResponseWriter, r *http.Request) error {
 	cookie, err := r.Cookie("_cookie")
-	if err == nil {
-		filename := fmt.Sprintf("./session/%v.txt", cookie.Value)
-		isSession := IsSession(filename)
-		if isSession {
-			err := os.Remove(filename)
-			if err != nil {
-				log.Println(err)
-			}
+	if err != nil {
+		return err
+	}
+	filename := fmt.Sprintf("./session/%v.txt", cookie.Value)
+	isSession := IsSession(filename)
+	if isSession {
+		err := os.Remove(filename)
+		if err != nil {
+			return err
 		}
+	}
+	DeleteCookie(w, r)
+	return nil
+}
+
+func DeleteCookie(w http.ResponseWriter, r *http.Request) error {
+	cookie, err := r.Cookie("_cookie")
+	if err != nil {
+		return err
 	}
 	cookie.MaxAge = -1
     http.SetCookie(w, cookie)
-	return
+	return nil
 }
 
 func IsSession(filename string) bool {
@@ -128,14 +127,15 @@ func IsSession(filename string) bool {
     }
 }
 
-func (session *Session)readSession(filename string) {
+func (s *Session)readSession(filename string) {
 	f, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
 	defer f.Close()
 	dec := gob.NewDecoder(f)
-	if err := dec.Decode(&session); err != nil {
+	if err := dec.Decode(&s); err != nil {
 		log.Fatal("decode error:", err)
 	}
 }
@@ -165,7 +165,7 @@ func timeToString(t time.Time) string {
     return str
 }
 
-func Encrypt(plaintext string) (cryptext string) {
-	cryptext = fmt.Sprintf("%x", sha256.Sum256([]byte(plaintext)))
-	return
+func Encrypt(plaintext string) string {
+	cryptext := fmt.Sprintf("%x", sha256.Sum256([]byte(plaintext)))
+	return cryptext
 }

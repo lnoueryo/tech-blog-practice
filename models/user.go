@@ -26,8 +26,17 @@ func NewUser(r *http.Request) User {
 	return user
 }
 
-func (user *User) Create() error {
-	result := DB.Create(user)
+func UserAll() ([]User, error) {
+	var users []User
+	result := DB.Preload("Posts").Find(&users)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return users, result.Error
+	}
+	return users, nil
+}
+
+func (u *User) Create() error {
+	result := DB.Create(u)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return result.Error
 	}
