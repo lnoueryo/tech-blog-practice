@@ -20,7 +20,7 @@ func Routes() http.Handler{
 	mux.Handle("/media/", http.StripPrefix("/media/", uploadFiles))
 
 	mux.HandleFunc("/", home.Index)
-	mux.HandleFunc("/login", auth.LoginIndex)
+	mux.HandleFunc("/login", auth.Login)
 	mux.HandleFunc("/sign-up", auth.Register)
 	mux.HandleFunc("/logout", auth.Logout)
 	mux.HandleFunc("/oauth/callback", auth.GitHubLogin)

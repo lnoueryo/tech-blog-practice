@@ -6,7 +6,6 @@ import (
 	"helloworld/config"
 	"helloworld/models"
 	"net/http"
-	"regexp"
 	"helloworld/modules/oauth"
 	"github.com/jinzhu/gorm"
 )
@@ -14,7 +13,7 @@ import (
 type Auth struct {}
 
 
-func (au *Auth)LoginIndex(w http.ResponseWriter, r *http.Request) {
+func (au *Auth)Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		s, err := models.CheckSession(r); if err == nil {
 			infolog.Print(fmt.Sprintf("%v\t%v\t%v\t%v\t%v", r.Method, r.URL, s.Name, s.Email, r.RemoteAddr))
@@ -32,64 +31,21 @@ func (au *Auth)LoginIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.Method == "POST" {
-		user, ok := tryToLogin(w, r); if !ok {
+		infolog.Print(fmt.Sprintf("%v\t%v\t%v", r.Method, r.URL, r.RemoteAddr))
+		u, err := models.NewUser(r); if err != nil {
+			errorlog.Print(err)
+		}
+		err = u.TryToLogin(w, r); if err != nil {
+			errorlog.Print(err)
+			redirectLogin(w, r, err.Error())
 			return
 		}
-		cookieSession(w, r, user)
+		err = setCookieSession(w, r, u)
 		http.Redirect(w, r, "/", 302)
 		return
 	}
 	http.NotFound(w, r)
 }
-
-func tryToLogin(w http.ResponseWriter, r *http.Request) (userInfo models.User, status bool) {
-	var user models.User
-	err := r.ParseForm(); if err != nil {
-		errorlog.Print(err, "Cannot find user")
-	}
-
-	email := r.FormValue("email")
-	if email == "" {
-		message := "email address is blank"
-		errorlog.Print(message)
-		validateLogin(w, r, message)
-		return user, false
-	}
-	password := r.FormValue("password")
-	if password == "" {
-		message := "password is blank"
-		errorlog.Print(message)
-		validateLogin(w, r, message)
-		return user, false
-	}
-	regex := `^[a-zA-Z0-9_.+-]+@([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.)+[a-zA-Z]{2,}$`
-	emailValidation := regexp.MustCompile(regex).Match([]byte(email))
-	if !emailValidation {
-		message := "invalid email address pattern"
-		errorlog.Print(message)
-		validateLogin(w, r, message)
-		return user, false
-	}
-
-	// Database
-	result := DB.Where("email = ?", r.Form.Get("email")).First(&user)
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		message := "your email address has not been registered"
-		errorlog.Print(message)
-		validateLogin(w, r, message)
-		return user, false
-	}
-
-	if user.Password != models.Encrypt(r.Form.Get("password")) {
-		message := "password is wrong"
-		errorlog.Print(message)
-		validateLogin(w, r, message)
-		return user, false
-	}
-	return user, true
-}
-
-
 
 func (au *Auth)Logout(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
@@ -124,104 +80,69 @@ func (au *Auth)Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (au *Auth)Register(w http.ResponseWriter, r *http.Request) {
-	s, err := models.CheckSession(r)
-	if err == nil {
-		infolog.Print(fmt.Sprintf("%v\t%v\t%v\t%v\t%v", r.Method, r.URL, s.Name, s.Email, r.RemoteAddr))
-		http.Redirect(w, r, "/", 302)
+
+	if r.Method == "GET" {
+		s, err := models.CheckSession(r)
+		if err == nil {
+			infolog.Print(fmt.Sprintf("%v\t%v\t%v\t%v\t%v", r.Method, r.URL, s.Name, s.Email, r.RemoteAddr))
+			http.Redirect(w, r, "/", 302)
+			return
+		}
+		infolog.Print(fmt.Sprintf("%v\t%v\t%v", r.Method, r.URL, r.RemoteAddr))
+		stringMap := make(map[string]string)
+		stringMap["name"] = ""
+		stringMap["email"] = ""
+		stringMap["message"] = ""
+		RenderTemplate(w, r, "sign-up.html", &TemplateData{
+			StringMap: stringMap,
+		})
 		return
 	}
-    // Is form submitted?
+
     if r.Method == "POST" {
-		err := r.ParseForm()
-		if err != nil {
-			errorlog.Print(err, "Cannot find user")
+		u, err := models.NewUser(r); if err != nil {
+			errorlog.Print(err)
 		}
 
-		name := r.FormValue("name")
-		if name == "" {
-			message := "name is blank"
-			errorlog.Print(message)
-			validateRegistration(w, r, message)
-			return
-		}
-
-		email := r.FormValue("email")
-		if email == "" {
-			message := "email address is blank"
-			errorlog.Print(message)
-			validateRegistration(w, r, message)
-			return
-		}
-
-		password := r.FormValue("password")
-		if password == "" {
-			message := "password is blank"
-			errorlog.Print(message)
-			validateRegistration(w, r, message)
-			return
-		}
-
-		confirmation := r.FormValue("confirmation")
-		if password == "" {
-			message := "confirmation is blank"
-			errorlog.Print(message)
-			validateRegistration(w, r, message)
-			return
-		}
-
-		if password != confirmation {
-			message := "password and confirmation must be the same"
-			validateRegistration(w, r, message)
-			return
-		}
-
-		regex := `^[a-zA-Z0-9_.+-]+@([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.)+[a-zA-Z]{2,}$`
-		emailValidation := regexp.MustCompile(regex).Match([]byte(email))
-		if !emailValidation {
-			message := "invalid email address pattern"
-			errorlog.Print(message)
-			validateRegistration(w, r, message)
-			return
-		}
-
-		if len(name) > 50 {
-			message := "name must be less than 50 characters"
-			errorlog.Print(message)
-			validateRegistration(w, r, message)
-			return
-		}
-
-		if len(password) < 8 {
-			message := "password must be more than 8 characters"
-			errorlog.Print(message)
-			validateRegistration(w, r, message)
+		err = u.Validate(r); if err != nil {
+			errorlog.Print(err)
+			redirectRegister(w, r, err.Error())
 			return
 		}
 
 		var user models.User
 		// Database
-		result  := DB.Where("email = ?", r.Form.Get("email")).First(&user)
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			user = models.NewUser(r)
-			err = user.Create()
-			if err != nil {
-				errorlog.Print(err)
-			}
-			cookieSession(w, r, user)
-			http.Redirect(w, r, "/", 302)
+		result := DB.Where("email = ?", r.Form.Get("email")).First(&user)
+		if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			err = errors.New("email address is already registered")
+			redirectRegister(w, r, err.Error())
+			return
 		}
-		return // AND return!
+
+		err = u.Create()
+		if err != nil {
+			err = errors.New("couldn't register your account")
+			errorlog.Print(err)
+			redirectRegister(w, r, err.Error())
+			return
+		}
+		err = setCookieSession(w, r, user)
+		http.Redirect(w, r, "/", 302)
+		return
     }
-	stringMap := make(map[string]string)
-	stringMap["name"] = ""
-	stringMap["email"] = ""
-	stringMap["message"] = ""
-	RenderTemplate(w, r, "sign-up.html", &TemplateData{
-		StringMap: stringMap,
-	})
+	http.NotFound(w, r)
 }
 
-func validateLogin(w http.ResponseWriter, r *http.Request, message string) {
+func (au *Auth)GitHubLogin(w http.ResponseWriter, r *http.Request) {
+	userInfo, err := oauth.GithubOAuth(w, r)
+	if err != nil {
+		errorlog.Print(err)
+	}
+	// databaseの処理Createを記載する↓↓
+	http.Redirect(w, r, "/?access_token=" + userInfo.AccessToken, 302)
+}
+
+func redirectLogin(w http.ResponseWriter, r *http.Request, message string) {
     // Params for rendering the page
     stringMap := make(map[string]string)
 	email := r.FormValue("email")
@@ -233,7 +154,7 @@ func validateLogin(w http.ResponseWriter, r *http.Request, message string) {
 	})
 }
 
-func validateRegistration(w http.ResponseWriter, r *http.Request, message string) {
+func redirectRegister(w http.ResponseWriter, r *http.Request, message string) {
     // Params for rendering the page
     stringMap := make(map[string]string)
 	name := r.FormValue("name")
@@ -246,20 +167,10 @@ func validateRegistration(w http.ResponseWriter, r *http.Request, message string
 	})
 }
 
-func (au *Auth)GitHubLogin(w http.ResponseWriter, r *http.Request) {
-	userInfo, err := oauth.GithubOAuth(w, r)
+func setCookieSession(w http.ResponseWriter, r *http.Request, u models.User) (error) {
+	sessionId, err := models.CreateSession(u)
 	if err != nil {
-		errorlog.Print(err)
-	}
-	// databaseの処理Createを記載する↓↓
-	http.Redirect(w, r, "/?access_token=" + userInfo.AccessToken, 302)
-}
-
-func cookieSession(w http.ResponseWriter, r *http.Request, user models.User) {
-	infolog.Print(fmt.Sprintf("%v\t%v\t%v\t%v", r.URL, user.Name, user.Email, r.RemoteAddr))
-	sessionId, err := models.CreateSession(user)
-	if err != nil {
-		errorlog.Print(err)
+		return err
 	}
 	// Path is needed for all path
 	cookie := http.Cookie{
@@ -270,5 +181,5 @@ func cookieSession(w http.ResponseWriter, r *http.Request, user models.User) {
 		Path:     "/",
 	}
 	http.SetCookie(w, &cookie)
+	return nil
 }
-
