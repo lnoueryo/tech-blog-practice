@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/gob"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -17,6 +16,7 @@ type Session struct {
 	UserId    int
 	Name      string
 	Email     string
+	Image	  string
 	CreatedAt time.Time
 	CSRFToken string
 }
@@ -34,7 +34,6 @@ func CreateSession(u User) (cryptext string, err error) {
 	}
 	filepath := fmt.Sprintf("./session/%v.txt", hashedSessionId)
     f, err := os.Create(filepath)
-	defer f.Close()
     if err != nil {
 		return hashedSessionId, err
     }
@@ -47,20 +46,13 @@ func CreateSession(u User) (cryptext string, err error) {
 }
 
 // Checks if the user is logged in and has a session, if not err is not nil
-func CheckSession(r *http.Request) (Session, error) {
+func CheckSession(r *http.Request) (bool) {
 	cookie, err := r.Cookie("_cookie")
-	s := Session{}
 	if err == nil {
 		filepath := fmt.Sprintf("./session/%v.txt", cookie.Value)
-		isSession := IsSession(filepath)
-		if isSession {
-			s.readSession(filepath)
-			return s, err
-		} else {
-			err = errors.New("invalid session")
-		}
+		return IsSession(filepath)
 	}
-	return s, err
+	return false
 }
 
 func GetSession(r *http.Request) (Session) {
@@ -71,24 +63,28 @@ func GetSession(r *http.Request) (Session) {
 	return s
 }
 
-func GenerateCSRFToken(r *http.Request) (string) {
-	s, err := CheckSession(r); if err != nil {
-		return ""
+func DeliverSession(r *http.Request) (Session) {
+	s := GetSession(r)
+	err := s.GenerateCSRFToken(r); if err != nil {
+		log.Print(err)
 	}
+	return s
+}
+
+func (s *Session)GenerateCSRFToken(r *http.Request) (error) {
 	filepath := fmt.Sprintf("./session/%v.txt", s.Id)
 	s.CSRFToken, _ = MakeRandomStr(32)
     f, err := os.Create(filepath)
     if err != nil {
-        return ""
+        return err
     }
     defer f.Close()
     enc := gob.NewEncoder(f)
 
     if err := enc.Encode(&s); err != nil {
-        err = errors.New("failed encode")
-		return ""
+		return err
     }
-	return s.CSRFToken
+	return nil
 }
 
 func (s *Session)CheckCSRFToken(r *http.Request) bool {

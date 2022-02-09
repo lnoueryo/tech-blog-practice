@@ -39,7 +39,7 @@ func (h *Home)Index(w http.ResponseWriter, r *http.Request) {
 	}
 
 	RenderTemplate(w, r, "index.html", &TemplateData{
-		CSRFToken: models.GenerateCSRFToken(r),
+		Session: models.DeliverSession(r),
 		Posts: posts,
 		Users: users,
 	})

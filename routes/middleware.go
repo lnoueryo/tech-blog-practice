@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"fmt"
 	"helloworld/models"
 	"net/http"
 	"time"
@@ -15,9 +14,7 @@ type Logger struct {
 // Auth checks if it's valid session
 func Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// session
-		_, err := models.CheckSession(r); if err != nil {
-			fmt.Println("login is required")
+		isSession := models.CheckSession(r); if !isSession {
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
@@ -30,9 +27,10 @@ func Auth(next http.Handler) http.Handler {
 //handler and logging the request details
 func (l *Logger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     start := time.Now()
-	session, err := models.CheckSession(r); if err != nil {
+	isSession := models.CheckSession(r); if !isSession {
 		infolog.Printf("%s %s %v %v", r.Method, r.URL.Path, r.RemoteAddr, time.Since(start))
 	} else {
+		session := models.GetSession(r)
 		infolog.Printf("%v %v %v %v %v %v", r.Method, r.URL.Path, session.Name, session.Email, r.RemoteAddr, time.Since(start))
 	}
 	l.handler.ServeHTTP(w, r)

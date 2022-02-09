@@ -14,7 +14,7 @@ type Auth struct {}
 
 func (au *Auth)Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		_, err := models.CheckSession(r); if err == nil {
+		isSession := models.CheckSession(r); if isSession {
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
@@ -46,28 +46,21 @@ func (au *Auth)Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (au *Auth)Logout(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.NotFound(w, r)
-		return
-	}
+	// if r.Method != "POST" {
+	// 	http.NotFound(w, r)
+	// 	return
+	// }
 
-	s, err := models.CheckSession(r); if err != nil {
-		errorlog.Print(err)
-		err = models.DeleteCookie(w, r); if err != nil {
-			errorlog.Print(err)
-		}
-		http.Redirect(w, r, "/login", http.StatusFound)
-		return
-	}
+	s := models.GetSession(r)
 
-	if !s.CheckCSRFToken(r) {
-		err = errors.New("invalid csrf_token")
-		errorlog.Print(err)
-		http.Redirect(w, r, "/", http.StatusFound)
-		return
-	}
+	// if !s.CheckCSRFToken(r) {
+	// 	err := errors.New("invalid csrf_token")
+	// 	errorlog.Print(err)
+	// 	http.Redirect(w, r, "/", http.StatusFound)
+	// 	return
+	// }
 
-	err = s.DeleteSession(w, r); if err !=nil {
+	err := s.DeleteSession(w, r); if err !=nil {
 		errorlog.Print(err)
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
@@ -78,8 +71,8 @@ func (au *Auth)Logout(w http.ResponseWriter, r *http.Request) {
 func (au *Auth)Register(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "GET" {
-		_, err := models.CheckSession(r)
-		if err == nil {
+		isSession := models.CheckSession(r)
+		if isSession {
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}

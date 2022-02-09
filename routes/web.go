@@ -36,7 +36,7 @@ func Routes() http.Handler{
 	mux.Handle("/", Auth(http.HandlerFunc(home.Index)))
 	mux.Handle("/logout", Auth(http.HandlerFunc(auth.Logout)))
 	mux.Handle("/post", Auth(http.HandlerFunc(post.Index)))
-	mux.Handle("/users", Auth(http.HandlerFunc(users.Index)))
+	mux.Handle("/users/", Auth(http.HandlerFunc(users.Index)))
 
 	// websocket
 	mux.Handle("/chat", websocket.Handler(home.Chat))

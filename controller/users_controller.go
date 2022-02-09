@@ -25,6 +25,7 @@ func (u *Users)Index(w http.ResponseWriter, r *http.Request) {
 			RenderTemplate(w, r, "users.html", &TemplateData{
 				StringMap: stringMap,
 				Users: users,
+				Session: models.DeliverSession(r),
 			})
 			return
 		}
@@ -59,6 +60,7 @@ func (u *Users)Index(w http.ResponseWriter, r *http.Request) {
 		StringMap: stringMap,
 		Users: users,
 		Posts: posts,
+		Session: models.DeliverSession(r),
 	})
 }
 
@@ -77,6 +79,6 @@ func (u *Users)Show(w http.ResponseWriter, r *http.Request, id string) {
 	RenderTemplate(w, r, "user.html", &TemplateData{
 		StringMap: stringMap,
 		Users: users,
-		CSRFToken: models.GenerateCSRFToken(r),
+		Session: models.DeliverSession(r),
 	})
 }

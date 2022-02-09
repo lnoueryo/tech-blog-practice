@@ -24,16 +24,23 @@
         </a>
       </div>
       <div class="d-flex align-items-center">
+        {{ $x := .Session.CSRFToken }}
+        {{ if $x}}
         <div>
           <input type="text">
           <button>★</button>
           <img src="" alt="">
         </div>
-        <form class="text-center" action="/logout" method="post">
-          <input class="btn btn-outline-danger" type="submit" value="Logout">
-          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-        </form>
-        <a class="btn btn-primary" href="/post">post</a>
+        <div class="btn-group">
+          <button class="btn btn-secondary btn-lg dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            {{ .Session.Name }}
+          </button>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="/post">post</a></li>
+            <li><a class="dropdown-item" href="/logout">logout</a></li>
+          </ul>
+        </div>
+        {{ end }}
       </div>
     </header>
     {{ if index .StringMap "auth" }}
