@@ -2,7 +2,6 @@ package controller
 
 import (
 	"errors"
-	"fmt"
 	"helloworld/config"
 	"helloworld/models"
 	"net/http"
@@ -15,12 +14,10 @@ type Auth struct {}
 
 func (au *Auth)Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		s, err := models.CheckSession(r); if err == nil {
-			infolog.Print(fmt.Sprintf("%v\t%v\t%v\t%v\t%v", r.Method, r.URL, s.Name, s.Email, r.RemoteAddr))
-			http.Redirect(w, r, "/", 302)
+		_, err := models.CheckSession(r); if err == nil {
+			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
-		infolog.Print(fmt.Sprintf("%v\t%v\t%v", r.Method, r.URL, r.RemoteAddr))
 		stringMap := make(map[string]string)
 		stringMap["email"] = ""
 		stringMap["message"] = ""
@@ -31,7 +28,6 @@ func (au *Auth)Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.Method == "POST" {
-		infolog.Print(fmt.Sprintf("%v\t%v\t%v", r.Method, r.URL, r.RemoteAddr))
 		u, err := models.NewUser(r); if err != nil {
 			errorlog.Print(err)
 		}
@@ -40,8 +36,10 @@ func (au *Auth)Login(w http.ResponseWriter, r *http.Request) {
 			redirectLogin(w, r, err.Error())
 			return
 		}
-		err = setCookieSession(w, r, u)
-		http.Redirect(w, r, "/", 302)
+		err = setCookieSession(w, r, u); if err != nil {
+			errorlog.Print(err)
+		}
+		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
 	http.NotFound(w, r)
@@ -49,7 +47,6 @@ func (au *Auth)Login(w http.ResponseWriter, r *http.Request) {
 
 func (au *Auth)Logout(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		infolog.Print(fmt.Sprintf("%v\t%v", r.URL, r.RemoteAddr))
 		http.NotFound(w, r)
 		return
 	}
@@ -59,36 +56,33 @@ func (au *Auth)Logout(w http.ResponseWriter, r *http.Request) {
 		err = models.DeleteCookie(w, r); if err != nil {
 			errorlog.Print(err)
 		}
-		http.Redirect(w, r, "/login", 302)
+		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
-	infolog.Print(fmt.Sprintf("%v\t%v\t%v\t%v\t%v", r.Method, r.URL, s.Name, s.Email, r.RemoteAddr))
 
 	if !s.CheckCSRFToken(r) {
 		err = errors.New("invalid csrf_token")
 		errorlog.Print(err)
-		http.Redirect(w, r, "/", 302)
+		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
 
 	err = s.DeleteSession(w, r); if err !=nil {
 		errorlog.Print(err)
-		http.Redirect(w, r, "/login", 302)
+		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
-	http.Redirect(w, r, "/login", 302)
+	http.Redirect(w, r, "/login", http.StatusFound)
 }
 
 func (au *Auth)Register(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "GET" {
-		s, err := models.CheckSession(r)
+		_, err := models.CheckSession(r)
 		if err == nil {
-			infolog.Print(fmt.Sprintf("%v\t%v\t%v\t%v\t%v", r.Method, r.URL, s.Name, s.Email, r.RemoteAddr))
-			http.Redirect(w, r, "/", 302)
+			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
-		infolog.Print(fmt.Sprintf("%v\t%v\t%v", r.Method, r.URL, r.RemoteAddr))
 		stringMap := make(map[string]string)
 		stringMap["name"] = ""
 		stringMap["email"] = ""
@@ -126,8 +120,10 @@ func (au *Auth)Register(w http.ResponseWriter, r *http.Request) {
 			redirectRegister(w, r, err.Error())
 			return
 		}
-		err = setCookieSession(w, r, user)
-		http.Redirect(w, r, "/", 302)
+		err = setCookieSession(w, r, user); if err != nil {
+			errorlog.Print(err)
+		}
+		http.Redirect(w, r, "/", http.StatusFound)
 		return
     }
 	http.NotFound(w, r)
@@ -139,7 +135,7 @@ func (au *Auth)GitHubLogin(w http.ResponseWriter, r *http.Request) {
 		errorlog.Print(err)
 	}
 	// databaseの処理Createを記載する↓↓
-	http.Redirect(w, r, "/?access_token=" + userInfo.AccessToken, 302)
+	http.Redirect(w, r, "/?access_token=" + userInfo.AccessToken, http.StatusFound)
 }
 
 func redirectLogin(w http.ResponseWriter, r *http.Request, message string) {

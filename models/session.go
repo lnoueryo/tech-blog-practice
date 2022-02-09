@@ -63,18 +63,30 @@ func CheckSession(r *http.Request) (Session, error) {
 	return s, err
 }
 
-func (s *Session)GenerateCSRFToken() (string) {
+func GetSession(r *http.Request) (Session) {
+	cookie, _ := r.Cookie("_cookie")
+	s := Session{}
+	filepath := fmt.Sprintf("./session/%v.txt", cookie.Value)
+	s.readSession(filepath)
+	return s
+}
+
+func GenerateCSRFToken(r *http.Request) (string) {
+	s, err := CheckSession(r); if err != nil {
+		return ""
+	}
 	filepath := fmt.Sprintf("./session/%v.txt", s.Id)
 	s.CSRFToken, _ = MakeRandomStr(32)
     f, err := os.Create(filepath)
     if err != nil {
-        log.Fatal(err)
+        return ""
     }
     defer f.Close()
     enc := gob.NewEncoder(f)
 
     if err := enc.Encode(&s); err != nil {
-        log.Fatal(err)
+        err = errors.New("failed encode")
+		return ""
     }
 	return s.CSRFToken
 }

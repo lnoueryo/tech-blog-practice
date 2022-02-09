@@ -2,7 +2,6 @@ package controller
 
 import (
 	"errors"
-	"fmt"
 	"helloworld/models"
 	"net/http"
 	"strconv"
@@ -15,16 +14,7 @@ type Users struct {}
 func (u *Users)Index(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimPrefix(r.URL.Path, "/users/") // URLを切り取ってなんとかする
 	i := strings.Index(path, "/")
-	// session
-	s, err := models.CheckSession(r)
-	if err != nil {
-		fmt.Sprintf("%v\t%v", r.URL, r.RemoteAddr)
-		http.Redirect(w, r, "/login", 302)
-		return
-	}
-	infolog.Print(fmt.Sprintf("%v\t%v\t%v\t%v\t%v", r.Method, r.URL, s.Name, s.Email, r.RemoteAddr))
 	stringMap := make(map[string]string)
-	stringMap["csrf_token"] = s.CSRFToken
 	if i == -1 {
 		var users []models.User
 		if path == "" { //usersのみ
@@ -39,14 +29,12 @@ func (u *Users)Index(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		 //usersのあとにキーがある場合
-		u.Show(w, r, path, s)
+		u.Show(w, r, path)
 		return
 	}
 	userIdStr, path := path[:i], path[i:]
-	infolog.Print(userIdStr)
-	infolog.Print(path)
 	if path == "/" {
-		u.Show(w, r, userIdStr, s)
+		u.Show(w, r, userIdStr)
 		return
 	}
 	userId, _ := strconv.Atoi(userIdStr)
@@ -74,7 +62,7 @@ func (u *Users)Index(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (u *Users)Show(w http.ResponseWriter, r *http.Request, id string, session models.Session) {
+func (u *Users)Show(w http.ResponseWriter, r *http.Request, id string) {
 	var users []models.User
 	userId, _ := strconv.Atoi(id)
 	result := DB.Preload("Posts").First(&users, userId)
@@ -86,9 +74,9 @@ func (u *Users)Show(w http.ResponseWriter, r *http.Request, id string, session m
 		return
 	}
 	stringMap := make(map[string]string)
-	stringMap["csrf_token"] = session.CSRFToken
 	RenderTemplate(w, r, "user.html", &TemplateData{
 		StringMap: stringMap,
 		Users: users,
+		CSRFToken: models.GenerateCSRFToken(r),
 	})
 }

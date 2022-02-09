@@ -3,6 +3,7 @@ package routes
 import (
 	"helloworld/config"
 	"helloworld/controller"
+	"log"
 	"net/http"
 	"golang.org/x/net/websocket"
 )
@@ -11,22 +12,35 @@ var home controller.Home
 var auth controller.Auth
 var post controller.Post
 var users controller.Users
+var infolog *log.Logger
+
+func init() {
+	infolog = config.App.InfoLog
+}
 
 func Routes() http.Handler{
 	mux := http.NewServeMux()
+
+	// static
 	staticFiles := http.FileServer(http.Dir(config.App.Static))
-	uploadFiles := http.FileServer(http.Dir("upload"))
+	uploadFiles := http.FileServer(http.Dir(config.App.Media))
 	mux.Handle("/static/", http.StripPrefix("/static/", staticFiles))
 	mux.Handle("/media/", http.StripPrefix("/media/", uploadFiles))
 
-	mux.HandleFunc("/", home.Index)
+	// normal
 	mux.HandleFunc("/login", auth.Login)
 	mux.HandleFunc("/sign-up", auth.Register)
-	mux.HandleFunc("/logout", auth.Logout)
 	mux.HandleFunc("/oauth/callback", auth.GitHubLogin)
-	mux.HandleFunc("/post", post.Index)
-	mux.HandleFunc("/users/", users.Index)
 
+	// Auth
+	mux.Handle("/", Auth(http.HandlerFunc(home.Index)))
+	mux.Handle("/logout", Auth(http.HandlerFunc(auth.Logout)))
+	mux.Handle("/post", Auth(http.HandlerFunc(post.Index)))
+	mux.Handle("/users", Auth(http.HandlerFunc(users.Index)))
+
+	// websocket
 	mux.Handle("/chat", websocket.Handler(home.Chat))
-	return mux
+
+	wrappedMux := NewLogger(mux)
+	return wrappedMux
 }

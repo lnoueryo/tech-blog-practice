@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"helloworld/models"
 	"log"
 	"net/http"
@@ -29,14 +28,6 @@ func (h *Home)Index(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// session
-	session, err := models.CheckSession(r); if err != nil {
-		http.Redirect(w, r, "/login", 302)
-		infolog.Print(fmt.Sprintf("%v\t%v", r.URL, r.RemoteAddr))
-		return
-	}
-	infolog.Print(fmt.Sprintf("%v\t%v\t%v\t%v\t%v", r.Method, r.URL, session.Name, session.Email, r.RemoteAddr))
-
 	//users
 	users, err := models.UserAll(); if err != nil {
 		errorlog.Print(err)
@@ -48,7 +39,7 @@ func (h *Home)Index(w http.ResponseWriter, r *http.Request) {
 	}
 
 	RenderTemplate(w, r, "index.html", &TemplateData{
-		CSRFToken: session.GenerateCSRFToken(),
+		CSRFToken: models.GenerateCSRFToken(r),
 		Posts: posts,
 		Users: users,
 	})

@@ -43,6 +43,5 @@ func ConnectSqlite3() (*gorm.DB, error) {
 
 func createMysqlPath(DBSettings Database) string {
 	path := fmt.Sprintf("%v:%v@tcp(%v:%v)/%v?%v", DBSettings.User, DBSettings.Password, DBSettings.Host, DBSettings.Port, DBSettings.Name, DBSettings.Query)
-	fmt.Println(DBSettings)
 	return path
 }
