@@ -3,3 +3,4 @@ session
 .env
 .env.dev
 upload
+gorm.db

@@ -12,4 +12,3 @@ vendor/
 .gitignore
 
 .env.dev
-commands

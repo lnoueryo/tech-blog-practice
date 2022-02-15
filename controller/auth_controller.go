@@ -4,9 +4,12 @@ import (
 	"errors"
 	"helloworld/config"
 	"helloworld/models"
-	"net/http"
+	"helloworld/modules/image"
 	"helloworld/modules/oauth"
-	"github.com/jinzhu/gorm"
+	"net/http"
+	"os"
+
+	"gorm.io/gorm"
 )
 
 type Auth struct {}
@@ -105,15 +108,21 @@ func (au *Auth)Register(w http.ResponseWriter, r *http.Request) {
 			redirectRegister(w, r, err.Error())
 			return
 		}
-
+		err = image.CreateImage(u.Name, u.Image)
+		if err != nil {
+			// err = errors.New("couldn't register your account")
+			redirectRegister(w, r, err.Error())
+			return
+		}
 		err = u.Create()
 		if err != nil {
+			os.Remove("/upload/user/" + u.Image)
 			err = errors.New("couldn't register your account")
 			errorlog.Print(err)
 			redirectRegister(w, r, err.Error())
 			return
 		}
-		err = setCookieSession(w, r, user); if err != nil {
+		err = setCookieSession(w, r, u); if err != nil {
 			errorlog.Print(err)
 		}
 		http.Redirect(w, r, "/", http.StatusFound)
