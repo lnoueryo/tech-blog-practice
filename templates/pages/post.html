@@ -2,9 +2,33 @@
 
 {{define "content"}}
 <div class="container">
-  <div class="d-flex">
-      <div class="w50">a</div>
-      <div class="w50">a</div>
+  <div style="max-width: 600px;margin: auto;">
+    <div>{{index .StringMap "message"}}</div>
+    <form class="w100" action="/post" method="post" enctype="multipart/form-data">
+      <div class="mb-3">
+        <label for="title" class="form-label">Title</label>
+        <input type="text" class="form-control" id="title" name="title" value="{{ index .StringMap "title"}}">
+      </div>
+      <div class="mb-3">
+        <label for="language" class="form-label">Language</label>
+        <select class="form-select" aria-label="Default select example" name="language">
+          {{ $x := index .StringMap "language"}}
+          <option value="english" {{ if eq $x "english"}}selected{{ end }}>English</option>
+          <option value="japanese" {{ if eq $x "japanese"}}selected{{ end }}>Japanese</option>
+          <option value="chinese" {{ if eq $x "chinese"}}selected{{ end }}>Chinese</option>
+        </select>      </div>
+      <div class="mb-3">
+        <label for="formFile" class="form-label">Image</label>
+        <input class="form-control" type="file" id="formFile" name="image" accept="image/png, image/jpeg">
+      </div>
+      <div class="mb-3">
+        <label for="content" class="form-label">Content</label>
+        <textarea name="content" class="form-control" id="content" rows="10" name="content">{{ index .StringMap "content"}}</textarea>
+      </div>
+      <div class="col-auto text-end">
+        <button type="submit" class="btn btn-primary">Create</button>
+      </div>
+    </form>
   </div>
 </div>
 

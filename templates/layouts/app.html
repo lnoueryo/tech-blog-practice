@@ -36,6 +36,7 @@
             {{ .Session.Name }}
           </button>
           <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="/users/{{ .Session.UserId }}">profile</a></li>
             <li><a class="dropdown-item" href="/post">post</a></li>
             <li><a class="dropdown-item" href="/logout">logout</a></li>
           </ul>

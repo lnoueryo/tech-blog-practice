@@ -20,6 +20,7 @@
         </div>
       </div>
       <div class="my-2">
+        {{ $x :=.Session.UserId }}
         {{range $index, $post := $user.Posts}}
         <a style="text-decoration: none;" href="/users/{{$user.Id}}/{{$post.Id}}">
           <div class="card mb-3">
@@ -28,6 +29,13 @@
                 <img src="/media/post/{{$post.Image}}" alt="..." class="rounded-start" style="object-fit: cover;width: 200px;height: 200px;">
               </div>
               <div class="card-body" style="flex-direction: column;display: flex;">
+                {{ if eq $x $user.Id}}
+                <div class="text-end">
+                  <a type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#exampleModal" onClick="setUrl({{$post}})">
+                    delete
+                  </a>
+                </div>
+                {{ end }}
                 <h4 class="card-title">{{$post.Title}}</h4>
                 <p class="card-title">{{$post.Language}}</p>
                 <p class="card-text"><small class="text-muted">最終更新 {{$post.CreatedAt.Format "2006/01/02"}}</small></p>
@@ -40,4 +48,29 @@
   </div>
 </div>
 
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Trying to delete</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Are you sure you would like to delete this post??
+      </div>
+      <div class="modal-footer">
+        <form id="send-form" class="text-end" method="post">
+          <input class="btn btn-primary" type="submit" value="Yes">
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+function setUrl(post) {
+  const sendForm = document.getElementById("send-form");
+  sendForm.action = "/post/delete/"+ post.id
+}
+</script>
 {{end}}
