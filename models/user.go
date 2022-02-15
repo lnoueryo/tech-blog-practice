@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type User struct {
@@ -26,12 +26,10 @@ func NewUser(r *http.Request) (User, error) {
 	if err != nil {
 		return user, err
 	}
-
-	name := r.Form.Get("name")
-	email := r.Form.Get("email")
-	image := r.Form.Get("image")
+	randStr, _ := MakeRandomStr(20)
+	filename := randStr + ".png"
 	password := Encrypt(r.Form.Get("password"))
-	user = User{Name: name, Email: email, Image: image, Password: password}
+	user = User{Name: r.Form.Get("name"), Email: r.Form.Get("email"), Image: filename, Password: password}
 	return user, nil
 }
 

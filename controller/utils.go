@@ -2,12 +2,15 @@ package controller
 
 import (
 	"bytes"
+	"errors"
 	"helloworld/config"
 	"helloworld/models"
 	"html/template"
 	"log"
 	"net/http"
-	"github.com/jinzhu/gorm"
+	"io"
+	"os"
+	"gorm.io/gorm"
 )
 
 type TemplateData struct {
@@ -21,7 +24,7 @@ type TemplateData struct {
 	JSON      []byte
 	Users     []models.User
 	Posts	  []models.Post
-	CSRFToken string
+	Session	  models.Session
 	// Form      *forms.Form
 }
 
@@ -58,4 +61,33 @@ func RenderTemplate(w http.ResponseWriter, r *http.Request, tmpl string, td *Tem
 		errorlog.Print("could not get template")
 	}
 }
+
+func StoreImage(r *http.Request, dir string, name string) error {
+
+    // POSTされたファイルデータを取得する
+    file, _, err := r.FormFile("image"); if(err != nil) {
+        errorlog.Print(err);
+        errorlog.Print("couldn't upload the file");
+		message := "name is blank"
+		err := errors.New(message)
+		return err
+    }
+    // // サーバー側に保存するために空ファイルを作成
+    saveImage, err := os.Create("./upload/" + dir + "/" + name); if (err != nil) {
+		message := "could't upload the file"
+		err := errors.New(message)
+		return err
+    }
+    defer saveImage.Close();
+    defer file.Close();
+    _, err = io.Copy(saveImage, file); if (err != nil) {
+        errorlog.Print(err);
+        errorlog.Print("failed to write the file");
+		message := "could't upload the file"
+		err := errors.New(message)
+		return err
+    }
+	return nil
+}
+
 

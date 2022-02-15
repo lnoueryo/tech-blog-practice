@@ -2,9 +2,9 @@ package models
 
 import (
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/jinzhu/gorm"
-	_ "github.com/mattn/go-sqlite3"
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 type Database struct {
@@ -21,18 +21,20 @@ var DB *gorm.DB
 func ConnectMysql(DBSettings Database) (*gorm.DB, error) {
     // // [ユーザ名]:[パスワード]@tcp([ホスト名]:[ポート番号])/[データベース名]?charset=[文字コード]
     dbconf := createMysqlPath(DBSettings)
-
-    db, err := gorm.Open("mysql", dbconf)
+	db, err := gorm.Open(mysql.Open(dbconf), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database")
+	}
 	DB = db
-    if err != nil {
-        panic(err.Error())
-    }
     return DB, err
 }
 
 func ConnectSqlite3() (*gorm.DB, error) {
 
-	db, err := gorm.Open("sqlite3", "gorm.db")
+	db, err := gorm.Open(sqlite.Open("gorm.db"), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database")
+	}
 	if err != nil {
 		panic("failed to connect database")
 	}

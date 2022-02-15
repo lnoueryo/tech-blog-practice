@@ -1,13 +1,19 @@
 package commands
 
 import (
-	"errors"
+	"math/rand"
+	"encoding/json"
 	"fmt"
+	"helloworld/models"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"os"
 	"time"
 
-	"github.com/jinzhu/gorm"
-	_ "github.com/mattn/go-sqlite3"
-	_ "github.com/go-sql-driver/mysql"
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 type User struct {
@@ -37,63 +43,92 @@ func MakeDBData(name string, arg1 string) error {
         err := fmt.Errorf(fmt.Sprintf(`no command "go run main.go %v"`, CreateArgsText()))
 		return err
 	}
+	allDatabase()
+	// if name == "" {
+	// 	fmt.Print("sqlite3 or mysql? ")
+	// 	name = AskRequiredThing()
+	// }
 
-	if name == "sqlite3" {
-		sqlite()
-		return nil
-	}
+	// if name == "sqlite3" {
+	// 	sqlite3()
+	// 	return nil
+	// }
 
-	if name == "mysql" {
-		mysql()
-		return nil
-	}
+	// if name == "mysql" {
+	// 	connectMysql()
+	// 	return nil
+	// }
 	err := fmt.Errorf(fmt.Sprintf(`no command "go run main.go %v"`, CreateArgsText()))
 	return err
 }
 
-func sqlite() {
-	DB, err := gorm.Open("sqlite3", "gorm.db")
+// func sqlite3() {
+// 	// DB, err := gorm.Open("sqlite3", "gorm.db")
+// 	DB, err := gorm.Open(sqlite.Open("gorm.db"), &gorm.Config{})
+// 	if err != nil {
+// 		panic("failed to connect database")
+// 	}
+// 	seriesOfCreation(DB)
+// }
+
+// func connectMysql() {
+// 	dbconf := `root:popo0908@/practices?parseTime=true&charset=utf8&loc=Local`
+// 	// dbconf := `root:admin@/tech-blog?parseTime=true&charset=utf8&loc=Local`
+// 	// DB, err := gorm.Open("mysql", dbconf)
+// 	DB, err := gorm.Open(mysql.Open(dbconf), &gorm.Config{})
+// 	if err != nil {
+// 		panic("failed to connect database")
+// 	}
+// 	seriesOfCreation(DB)
+// }
+
+func allDatabase() {
+	SQDB, err := gorm.Open(sqlite.Open("gorm.db"), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
-	defer DB.Close()
-	seriesOfCreation(DB)
-}
-
-func mysql() {
-	dbconf := `root:admin@/tech-blog?parseTime=true`
-	DB, err := gorm.Open("mysql", dbconf + "&charset=utf8&loc=Local")
+	dbconf := `root:popo0908@/practices?parseTime=true&charset=utf8&loc=Local`
+	// dbconf := `root:admin@/tech-blog?parseTime=true&charset=utf8&loc=Local`
+	// DB, err := gorm.Open("mysql", dbconf)
+	MQDB, err := gorm.Open(mysql.Open(dbconf), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
-	defer DB.Close()
-	seriesOfCreation(DB)
+	seriesOfCreation(SQDB, MQDB)
 }
 
-func seriesOfCreation(DB *gorm.DB) {
+func seriesOfCreation(SQDB *gorm.DB, MQDB *gorm.DB) {
 	// isUsersTable := db.Migrator().HasTable("a")
 	// fmt.Println(isUsersTable)
-	migrateUserTable(DB)
-	migratePostTable(DB)
-	createUser(DB)
-	createPost(DB)
-	// readUser(DB)
-	// readPost(DB)
+	migrateUserTable(SQDB, MQDB)
+	migratePostTable(SQDB, MQDB)
+	createUser(SQDB, MQDB)
+	createUsers(SQDB, MQDB)
+	createPost(SQDB, MQDB)
+	createPosts(SQDB, MQDB)
+	readUser(SQDB)
+	readPost(SQDB)
 }
 
-func migrateUserTable(db *gorm.DB) {
-	db.AutoMigrate(&User{})
-	db.DropTable(&User{})
-	db.CreateTable(&User{})
+func migrateUserTable(SQDB *gorm.DB, MQDB *gorm.DB) {
+	SQDB.AutoMigrate(&User{})
+	SQDB.Migrator().DropTable(&User{})
+	SQDB.Migrator().CreateTable(&User{})
+	MQDB.AutoMigrate(&User{})
+	MQDB.Migrator().DropTable(&User{})
+	MQDB.Migrator().CreateTable(&User{})
 }
 
-func migratePostTable(db *gorm.DB) {
-	db.AutoMigrate(&Post{})
-	db.DropTable(&Post{})
-	db.CreateTable(&Post{})
+func migratePostTable(SQDB *gorm.DB, MQDB *gorm.DB) {
+	SQDB.AutoMigrate(&Post{})
+	SQDB.Migrator().DropTable(&Post{})
+	SQDB.Migrator().CreateTable(&Post{})
+	MQDB.AutoMigrate(&Post{})
+	MQDB.Migrator().DropTable(&Post{})
+	MQDB.Migrator().CreateTable(&Post{})
 }
 
-func createUser(db *gorm.DB) {
+func createUser(SQDB *gorm.DB, MQDB *gorm.DB) {
 	var newUser = User{
 		Id: 1,
 		Name: "RIO",
@@ -102,10 +137,36 @@ func createUser(db *gorm.DB) {
 		Image: "CWCM67iUYAAZ1Kp.png",
 		CreatedAt: time.Now(),
 	}
-	db.Create(&newUser)
+	SQDB.Create(&newUser)
+	MQDB.Create(&newUser)
 }
 
-func createPost(db *gorm.DB) {
+func createUsers(SQDB *gorm.DB, MQDB *gorm.DB) {
+	deleteUsersImages()
+	byteArray, err := ioutil.ReadFile("data/users.json"); if err != nil {
+		fmt.Println(err)
+	}
+	var users []User
+	err = json.Unmarshal(byteArray, &users); if err != nil {
+		fmt.Println(err)
+	}
+	result := make([]User, 0)
+	now := time.Now()
+	fmt.Println(now)
+	for i, u := range users {
+		u.Id = i + 2
+		u.Password = "123456789"
+		u.CreatedAt = time.Now()
+		u.getImage()
+		result = append(result, u)
+	}
+	SQDB.Create(&result)
+	MQDB.Create(&result)
+	now = time.Now()
+	fmt.Println(now)
+}
+
+func createPost(SQDB *gorm.DB, MQDB *gorm.DB) {
 	var post1 = Post{
 		Id: 1,
 		Title: "I started to keep diaries",
@@ -126,24 +187,119 @@ func createPost(db *gorm.DB) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	db.Create(&post1)
-	db.Create(&post2)
+	SQDB.Create(&post1)
+	MQDB.Create(&post2)
+}
+
+func createPosts(SQDB *gorm.DB, MQDB *gorm.DB) {
+	deletePostsImages()
+	byteArray, err := ioutil.ReadFile("data/posts.json"); if err != nil {
+		fmt.Println(err)
+	}
+	var posts []Post
+	err = json.Unmarshal(byteArray, &posts); if err != nil {
+		fmt.Println(err)
+	}
+	result := make([]Post, 0)
+	now := time.Now()
+	fmt.Println(now)
+	for i, p := range posts {
+		p.Id = i + 3
+		p.Language = "English"
+		p.UserID = randomInt(2, 102)
+		p.CreatedAt = time.Now()
+		p.getImage()
+		result = append(result, p)
+	}
+	SQDB.Create(&result)
+	MQDB.Create(&result)
+	now = time.Now()
+	fmt.Println(now)
 }
 
 func readUser(db *gorm.DB) {
 	var user User
-	result := db.Preload("Posts").Where("email = ?", "popo62520908@gmail.com").First(&user)
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		
-	}
+	db.Preload("Posts").Where("email = ?", "popo62520908@gmail.com").First(&user)
 	fmt.Println(user)
 }
 
 func readPost(db *gorm.DB) {
 	var post Post
-	result := db.Preload("User").Find(&post)
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		
-	}
+	db.Preload("User").Find(&post)
 	fmt.Println(post)
+}
+
+
+func (u *User)getImage() {
+	url := "https://loremflickr.com/320/240?random=1"
+
+	response, err := http.Get(url)
+	if err != nil {
+		panic(err)
+	}
+	defer response.Body.Close()
+
+	randStr, _ := models.MakeRandomStr(15)
+	extension := ".png"
+	filename := randStr + extension
+	path := "upload/user/"
+
+	file, err := os.Create(path + filename)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	io.Copy(file, response.Body)
+	u.Image = filename
+}
+
+func (p *Post)getImage() {
+	url := "https://loremflickr.com/320/240?random=1"
+
+	response, err := http.Get(url)
+	if err != nil {
+		panic(err)
+	}
+	defer response.Body.Close()
+
+	randStr, _ := models.MakeRandomStr(15)
+	extension := ".png"
+	filename := randStr + extension
+	path := "upload/post/"
+
+	file, err := os.Create(path + filename)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	io.Copy(file, response.Body)
+	p.Image = filename
+}
+
+func deleteUsersImages() {
+	files, _ := ioutil.ReadDir("./upload/user")
+	if len(files) != 0 {
+		for _, v := range files {
+			if v.Name() != "CWCM67iUYAAZ1Kp.png" {
+				os.Remove("./upload/user/" + v.Name())
+			}
+		}
+	}
+}
+
+func deletePostsImages() {
+	files, _ := ioutil.ReadDir("./upload/post")
+	if len(files) != 0 {
+		for _, v := range files {
+			if v.Name() != "abc.png" && v.Name() != "abcd.png"{
+				os.Remove("./upload/post/" + v.Name())
+			}
+		}
+	}
+}
+
+func randomInt(min, max int) int {
+	return min + rand.Intn(max-min)
 }

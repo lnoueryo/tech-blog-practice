@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type Users struct {}
