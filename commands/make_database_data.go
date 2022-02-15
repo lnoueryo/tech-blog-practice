@@ -1,12 +1,13 @@
 package commands
 
 import (
-	"math/rand"
 	"encoding/json"
 	"fmt"
 	"helloworld/models"
+	"helloworld/modules/image"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
 	"time"
@@ -155,9 +156,12 @@ func createUsers(SQDB *gorm.DB, MQDB *gorm.DB) {
 	fmt.Println(now)
 	for i, u := range users {
 		u.Id = i + 2
-		u.Password = "123456789"
+		u.Password = "15e2b0d3c33891ebb0f1ef609ec419420c20e320ce94c65fbc8c3312448eb225"
 		u.CreatedAt = time.Now()
-		u.getImage()
+		// u.getImage()
+		randStr, _ := models.MakeRandomStr(20)
+		u.Image = randStr + ".png"
+		image.CreateImage(u.Name, u.Image)
 		result = append(result, u)
 	}
 	SQDB.Create(&result)
@@ -188,6 +192,8 @@ func createPost(SQDB *gorm.DB, MQDB *gorm.DB) {
 		UpdatedAt: time.Now(),
 	}
 	SQDB.Create(&post1)
+	SQDB.Create(&post2)
+	MQDB.Create(&post1)
 	MQDB.Create(&post2)
 }
 
@@ -211,8 +217,8 @@ func createPosts(SQDB *gorm.DB, MQDB *gorm.DB) {
 		p.getImage()
 		result = append(result, p)
 	}
-	SQDB.Create(&result)
 	MQDB.Create(&result)
+	SQDB.Create(&result)
 	now = time.Now()
 	fmt.Println(now)
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"helloworld/models"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"gorm.io/gorm"
@@ -81,4 +82,50 @@ func (u *Users)Show(w http.ResponseWriter, r *http.Request, id string) {
 		Users: users,
 		Session: models.DeliverSession(r),
 	})
+}
+
+func (u *Users)Delete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.NotFound(w, r)
+		return
+	}
+	path := strings.TrimPrefix(r.URL.Path, "/users/delete/") // URLを切り取ってなんとかする
+	i := strings.Index(path, "/")
+	if i == -1 {
+		var user models.User
+		if path != "" { //usersのみ
+			result := DB.Preload("Posts.User").First(&user, path)
+			if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+				errorlog.Print(result)
+			}
+			s := models.GetSession(r)
+			if user.Id == s.UserId {
+				result = DB.Select("Posts").Delete(&user)
+				if DB.Error != nil {
+					profilePage := "/users/" + strconv.Itoa(s.UserId)
+					http.Redirect(w, r, profilePage, http.StatusFound)
+					return
+				} else if result.RowsAffected < 1 {
+					profilePage := "/users/" + strconv.Itoa(s.UserId)
+					http.Redirect(w, r, profilePage, http.StatusFound)
+					return
+				}
+				os.Remove("./upload/user/" + user.Image)
+				for _, p := range user.Posts {
+					os.Remove("./upload/post/" + p.Image)
+				}
+
+				s := models.GetSession(r)
+
+				err := s.DeleteSession(w, r); if err !=nil {
+					errorlog.Print(err)
+					http.Redirect(w, r, "/login", http.StatusFound)
+					return
+				}
+				http.Redirect(w, r, "/login", http.StatusFound)
+				return
+			}
+		}
+	}
+	http.NotFound(w, r)
 }

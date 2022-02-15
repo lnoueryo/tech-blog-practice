@@ -17,7 +17,7 @@ type Auth struct {}
 
 func (au *Auth)Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		isSession := models.CheckSession(r); if isSession {
+		_, isSession := models.CheckSession(r); if isSession {
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
@@ -49,12 +49,14 @@ func (au *Auth)Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (au *Auth)Logout(w http.ResponseWriter, r *http.Request) {
-	// if r.Method != "POST" {
-	// 	http.NotFound(w, r)
-	// 	return
-	// }
-
-	s := models.GetSession(r)
+	if r.Method != "POST" {
+		http.NotFound(w, r)
+		return
+	}
+	s, isSession := models.CheckSession(r); if !isSession {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
 
 	// if !s.CheckCSRFToken(r) {
 	// 	err := errors.New("invalid csrf_token")
@@ -74,7 +76,7 @@ func (au *Auth)Logout(w http.ResponseWriter, r *http.Request) {
 func (au *Auth)Register(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "GET" {
-		isSession := models.CheckSession(r)
+		_, isSession := models.CheckSession(r)
 		if isSession {
 			http.Redirect(w, r, "/", http.StatusFound)
 			return

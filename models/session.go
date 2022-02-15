@@ -1,7 +1,6 @@
 package models
 
 import (
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/gob"
 	"fmt"
@@ -30,6 +29,7 @@ func CreateSession(u User) (cryptext string, err error) {
 		UserId: u.Id,
 		Name: u.Name,
 		Email: u.Email,
+		Image: u.Image,
 		CreatedAt: time.Now(),
 	}
 	filepath := fmt.Sprintf("./session/%v.txt", hashedSessionId)
@@ -37,6 +37,7 @@ func CreateSession(u User) (cryptext string, err error) {
     if err != nil {
 		return hashedSessionId, err
     }
+	defer f.Close()
     enc := gob.NewEncoder(f)
 
     if err := enc.Encode(s); err != nil {
@@ -46,13 +47,15 @@ func CreateSession(u User) (cryptext string, err error) {
 }
 
 // Checks if the user is logged in and has a session, if not err is not nil
-func CheckSession(r *http.Request) (bool) {
+func CheckSession(r *http.Request) (Session, bool) {
 	cookie, err := r.Cookie("_cookie")
+	s := Session{}
 	if err == nil {
 		filepath := fmt.Sprintf("./session/%v.txt", cookie.Value)
-		return IsSession(filepath)
+		err = s.readSession(filepath)
+		return s, IsSession(filepath)
 	}
-	return false
+	return s, false
 }
 
 func GetSession(r *http.Request) (Session) {
@@ -78,8 +81,8 @@ func (s *Session)GenerateCSRFToken(r *http.Request) (error) {
     if err != nil {
         return err
     }
-    defer f.Close()
     enc := gob.NewEncoder(f)
+    defer f.Close()
 
     if err := enc.Encode(&s); err != nil {
 		return err
@@ -135,45 +138,15 @@ func IsSession(filename string) bool {
     }
 }
 
-func (s *Session)readSession(filename string) {
+func (s *Session)readSession(filename string) error {
 	f, err := os.Open(filename)
 	if err != nil {
-		log.Fatal(err)
-		return
+		return err
 	}
-	defer f.Close()
 	dec := gob.NewDecoder(f)
+	defer f.Close()
 	if err := dec.Decode(&s); err != nil {
-		log.Fatal("decode error:", err)
+		return err
 	}
-}
-
-
-func MakeRandomStr(n uint32) (string, error) {
-    const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-    // 乱数を生成
-    b := make([]byte, n)
-    if _, err := rand.Read(b)
-	err != nil {
-        return "", err
-    }
-
-    // letters からランダムに取り出して文字列を生成
-    var result string
-    for _, v := range b {
-        // index が letters の長さに収まるように調整
-        result += string(letters[int(v)%len(letters)])
-    }
-    return result, nil
-}
-
-func timeToString(t time.Time) string {
-    str := t.Format("20060102150405")
-    return str
-}
-
-func Encrypt(plaintext string) string {
-	cryptext := fmt.Sprintf("%x", sha256.Sum256([]byte(plaintext)))
-	return cryptext
+	return nil
 }

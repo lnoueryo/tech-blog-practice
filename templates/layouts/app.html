@@ -29,7 +29,9 @@
         <div>
           <input type="text">
           <button>★</button>
-          <img src="" alt="">
+          <a href="/users/{{ .Session.UserId }}">
+            <img class="rounded-circle mx-2" style="width: 40px;height: 40px" src="/media/user/{{ .Session.Image }}" alt="">
+          </a>
         </div>
         <div class="btn-group">
           <button class="btn btn-secondary btn-lg dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -38,7 +40,9 @@
           <ul class="dropdown-menu">
             <li><a class="dropdown-item" href="/users/{{ .Session.UserId }}">profile</a></li>
             <li><a class="dropdown-item" href="/post">post</a></li>
-            <li><a class="dropdown-item" href="/logout">logout</a></li>
+            <form action="/logout" method="post">
+              <li><input class="dropdown-item" type="submit" value="logout"></li>
+            </form>
           </ul>
         </div>
         {{ end }}
