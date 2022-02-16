@@ -1,0 +1,46 @@
+{{template "app" .}}
+
+{{define "content"}}
+{{ $user := .Session }}
+<div class="container">
+  <div class="center">
+    <div class="card card-inner mb-2">
+      <div>{{index .StringMap "message"}}</div>
+      <form action="/users/edit/" method="post" enctype="multipart/form-data">
+        <div class="mb-3 row">
+          <label for="name" class="col-sm-2 col-form-label">Name</label>
+          <div class="col-sm-10">
+            <input class="form-control" type="text" name="name" id="name" value="{{$user.Name}}">
+          </div>
+        </div>
+        <div class="mb-3 row">
+          <label for="email" class="col-sm-2 col-form-label">Email</label>
+          <div class="col-sm-10">
+            <input class="form-control" type="text" name="email" id="email" value="{{$user.Email}}">
+          </div>
+        </div>
+        <div class="mb-3 row">
+          <label for="image" class="col-sm-2 col-form-label">Image</label>
+          <div class="col-sm-10">
+            <input class="form-control" type="file" id="formFile" name="image" accept="image/png, image/jpeg">
+          </div>
+        </div>
+        <div class="mb-3 row align-items-center">
+          <label for="current-password" class="col-sm-2 col-form-label">Current<br>Password</label>
+          <div class="col-sm-10">
+            <input type="password" class="form-control" name="current-password" id="current-password">
+          </div>
+        </div>
+        <div class="card-body d-flex justify-content-end">
+          <div>
+            <a href="/users/edit" class="btn btn-outline-danger mx-2">Cancel</a>
+          </div>
+          <div class="text-end">
+            <input type="submit" class="btn btn-outline-primary mb-3" value="Update">
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{{end}}

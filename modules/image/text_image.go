@@ -12,6 +12,7 @@ import (
 	"github.com/golang/freetype/truetype"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
+	"golang.org/x/image/draw"
 )
 
 var (
@@ -73,6 +74,26 @@ func CreateImage(text string, filename string) error {
 	return nil
 }
 
+func ResizeImage() {
+	input, _ := os.Open("abc.png")
+	defer input.Close()
+
+	output, _ := os.Create("a.png")
+	defer output.Close()
+
+	// Decode the image (from PNG to image.Image):
+	src, _ := png.Decode(input)
+
+	// Set the expected size that you want:
+	dst := image.NewRGBA(image.Rect(0, 0, src.Bounds().Max.X/2, src.Bounds().Max.Y/2))
+
+	// Resize:
+	draw.NearestNeighbor.Scale(dst, dst.Rect, src, src.Bounds(), draw.Over, nil)
+
+	// Encode to `output`:
+	png.Encode(output, dst)
+}
+
 func colorImage() *image.RGBA {
     rand.Seed(time.Now().UnixNano())
 	result := [] uint8{}
@@ -103,3 +124,4 @@ func getRuneAt(s string, i int) rune {
     rs := []rune(s)
     return rs[i]
 }
+

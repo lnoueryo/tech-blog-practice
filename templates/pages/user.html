@@ -17,7 +17,7 @@
             <h3>Post</h3>
             <h5>{{len $user.Posts}}</h5>
             <div class="card-body d-flex justify-content-end">
-              <a class="btn btn-primary mx-2">Edit</a>
+              <a href="/users/edit" class="btn btn-primary mx-2">Edit</a>
               <a type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#exampleModal" onClick="setUrl({{$user}}, 'user')">
                 Delete
               </a>

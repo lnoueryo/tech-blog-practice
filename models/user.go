@@ -42,7 +42,7 @@ func UserAll() ([]User, error) {
 	return users, nil
 }
 
-func (u *User) Create() error {
+func (u *User)Create() error {
 	result := DB.Create(u)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return result.Error
@@ -50,7 +50,15 @@ func (u *User) Create() error {
 	return nil
 }
 
-func (u *User) Validate(r *http.Request) error {
+func (u *User)Update() error {
+	result := DB.Create(u)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return result.Error
+	}
+	return nil
+}
+
+func (u *User)Validate(r *http.Request) error {
 	err := u.CheckBlank(r); if err != nil {
 		return err
 	}
@@ -66,6 +74,30 @@ func (u *User) Validate(r *http.Request) error {
 	err = u.CheckLength(r); if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (u *User) UpdateValidate(r *http.Request) error {
+	err := u.CheckBlankForUpdate(r); if err != nil {
+		return err
+	}
+
+	err = u.MatchPassword(r); if err != nil {
+		return err
+	}
+
+	err = u.SearchSameEmail(r); if err != nil {
+		return err
+	}
+
+	err = u.CheckImage(r); if err != nil {
+		return err
+	}
+
+	err = u.CheckLengthForUpdate(r); if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -128,6 +160,31 @@ func (u *User) CheckBlank(r *http.Request) error {
 	return nil
 }
 
+func (u *User) CheckBlankForUpdate(r *http.Request) error {
+	name := r.FormValue("name")
+	if name == "" {
+		message := "name is blank"
+		err := errors.New(message)
+		return err
+	}
+
+	email := r.FormValue("email")
+	if email == "" {
+		message := "email address is blank"
+		err := errors.New(message)
+		return err
+	}
+
+	password := r.FormValue("current-password")
+	if password == "" {
+		message := "password is blank"
+		err := errors.New(message)
+		return err
+	}
+
+	return nil
+}
+
 func (u *User) ComparePassword(r *http.Request) error {
 	password := r.FormValue("password")
 	confirmation := r.FormValue("confirmation")
@@ -178,6 +235,26 @@ func (u *User) CheckLength(r *http.Request) error {
 	return nil
 }
 
+func (u *User) CheckLengthForUpdate(r *http.Request) error {
+	name := r.FormValue("name")
+	email := r.FormValue("email")
+
+	if len(name) > 50 {
+		message := "name must be less than 50 characters"
+		err := errors.New(message)
+		return err
+	}
+	index := strings.Index(email, "@")
+	localPart := email[:index]
+	if len(localPart) > 64 {
+		message := "invalid email address pattern"
+		err := errors.New(message)
+		return err
+	}
+
+	return nil
+}
+
 func (u *User)CheckLoginFormBlank(r *http.Request) error {
 	email := r.FormValue("email")
 	if email == "" {
@@ -190,6 +267,39 @@ func (u *User)CheckLoginFormBlank(r *http.Request) error {
 	if password == "" {
 		message := "password is blank"
 		err := errors.New(message)
+		return err
+	}
+	return nil
+}
+
+func (u *User)MatchPassword(r *http.Request) error {
+	currentPassword := Encrypt(r.FormValue("current-password"))
+	if u.Password != currentPassword {
+		message := "current password is wrong"
+		err := errors.New(message)
+		return err
+	}
+	return nil
+}
+
+func (u *User)CheckImage(r *http.Request) error {
+	currentPassword := Encrypt(r.FormValue("current-password"))
+	if u.Password != currentPassword {
+		message := "current password is wrong"
+		err := errors.New(message)
+		return err
+	}
+	return nil
+}
+
+func (u *User)SearchSameEmail(r *http.Request) error {
+	var user User
+	result := DB.Where("email = ?", r.Form.Get("email")).First(&user)
+	if !errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		if u.Email == user.Email {
+			return nil
+		}
+		err := errors.New("email address is already registered")
 		return err
 	}
 	return nil
