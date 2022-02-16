@@ -88,7 +88,7 @@ func allDatabase() {
 	if err != nil {
 		panic("failed to connect database")
 	}
-	dbconf := `root:popo0908@/practices?parseTime=true&charset=utf8&loc=Local`
+	dbconf := `root:@/practices?parseTime=true&charset=utf8&loc=Local`
 	// dbconf := `root:admin@/tech-blog?parseTime=true&charset=utf8&loc=Local`
 	// DB, err := gorm.Open("mysql", dbconf)
 	MQDB, err := gorm.Open(mysql.Open(dbconf), &gorm.Config{})
