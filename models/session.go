@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"encoding/base64"
+	"encoding/json"
 	"time"
 )
 
@@ -149,4 +151,33 @@ func (s *Session)readSession(filename string) error {
 		return err
 	}
 	return nil
+}
+
+func FormCookie(w http.ResponseWriter, r *http.Request) {
+	jsonByte, _ := json.Marshal(&r)
+	j64Value := base64.StdEncoding.EncodeToString(jsonByte)
+	expiryTime := time.Now().Add(time.Second * 15)
+	cookie := http.Cookie{
+		Name:     "_form",
+		Value:    j64Value,
+		HttpOnly: true,
+		Secure:   true,
+		Path:     "/users",
+		Expires:  expiryTime,
+	}
+	http.SetCookie(w, &cookie)
+}
+
+func CheckFormCookie(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("_form")
+	if err == nil {
+		var form http.Request
+		ds, _ := base64.StdEncoding.DecodeString(cookie.Value)
+		json.Unmarshal(ds, &form)
+		for key, values := range form.Form { // range over map
+			for _, value := range values { // range over []string
+				fmt.Println(key, value)
+			}
+		}
+	}
 }
