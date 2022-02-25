@@ -1,7 +1,6 @@
 package config
 
 import (
-	"helloworld/models"
 	"os"
 )
 
@@ -22,5 +21,5 @@ func configureProdSettings() {
 	// 	Port: os.Getenv("DB_PORT"),
 	// 	Query: os.Getenv("DB_QUERY"),
 	// }
-	models.ConnectSqlite3()
+	ConnectSqlite3()
 }
