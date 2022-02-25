@@ -3,15 +3,14 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
-	"helloworld/models"
 	"helloworld/modules/image"
+	"helloworld/modules/crypto"
 	"io"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
 	"time"
-
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -159,7 +158,7 @@ func createUsers(SQDB *gorm.DB, MQDB *gorm.DB) {
 		u.Password = "15e2b0d3c33891ebb0f1ef609ec419420c20e320ce94c65fbc8c3312448eb225"
 		u.CreatedAt = time.Now()
 		// u.getImage()
-		randStr, _ := models.MakeRandomStr(20)
+		randStr, _ := crypto.MakeRandomStr(20)
 		u.Image = randStr + ".png"
 		image.CreateImage(u.Name, u.Image)
 		result = append(result, u)
@@ -245,7 +244,7 @@ func (u *User)getImage() {
 	}
 	defer response.Body.Close()
 
-	randStr, _ := models.MakeRandomStr(15)
+	randStr, _ := crypto.MakeRandomStr(15)
 	extension := ".png"
 	filename := randStr + extension
 	path := "upload/user/"
@@ -269,7 +268,7 @@ func (p *Post)getImage() {
 	}
 	defer response.Body.Close()
 
-	randStr, _ := models.MakeRandomStr(15)
+	randStr, _ := crypto.MakeRandomStr(15)
 	extension := ".png"
 	filename := randStr + extension
 	path := "upload/post/"

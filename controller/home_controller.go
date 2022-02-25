@@ -29,12 +29,11 @@ func (h *Home)Index(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//users
-	users, err := models.UserAll(); if err != nil {
+	users, err := models.UserLatest(21); if err != nil {
 		errorlog.Print(err)
 	}
-
 	//posts
-	posts, err := models.PostAll(); if err != nil {
+	posts, err := models.PostLatest(7); if err != nil {
 		errorlog.Print(err)
 	}
 

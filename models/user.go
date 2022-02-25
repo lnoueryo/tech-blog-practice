@@ -2,8 +2,11 @@ package models
 
 import (
 	"errors"
+	"fmt"
+	"helloworld/modules/crypto"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -12,7 +15,7 @@ import (
 
 type User struct {
 	Id        int `gorm:"AUTO_INCREMENT"json:"id"`
-	Name      string `json:"name"`
+	Name      string `json:"name" sql:"CHARACTER SET utf8 COLLATE utf8_unicode_ci"`
 	Email     string `json:"email"`
 	Password  string `json:"password"`
 	Image     string `json:"image"`
@@ -26,9 +29,9 @@ func NewUser(r *http.Request) (User, error) {
 	if err != nil {
 		return user, err
 	}
-	randStr, _ := MakeRandomStr(20)
+	randStr, _ := crypto.MakeRandomStr(20)
 	filename := randStr + ".png"
-	password := Encrypt(r.Form.Get("password"))
+	password := crypto.Encrypt(r.Form.Get("password"))
 	user = User{Name: r.Form.Get("name"), Email: r.Form.Get("email"), Image: filename, Password: password}
 	return user, nil
 }
@@ -36,6 +39,15 @@ func NewUser(r *http.Request) (User, error) {
 func UserAll() ([]User, error) {
 	var users []User
 	result := DB.Preload("Posts").Find(&users)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return users, result.Error
+	}
+	return users, nil
+}
+
+func UserLatest(limit int) ([]User, error) {
+	var users []User
+	result := DB.Order("created_at desc").Limit(limit).Preload("Posts").Find(&users)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return users, result.Error
 	}
@@ -56,6 +68,44 @@ func (u *User)Update() error {
 		return result.Error
 	}
 	return nil
+}
+
+// func User
+
+func SearchUserLike(r *http.Request, column string) ([]User, int64, error) {
+	var users []User
+	query := r.URL.Query()
+	page, _ := strconv.Atoi(query["page"][0])
+	if query[column][0] == "" {
+		users, count, _ := ChunkUser(page)
+		return users, count, nil
+	}
+	split := 10
+	offset := (page - 1) * split
+	textSlice := strings.Split(query[column][0], " ")
+	var tx *gorm.DB
+	var count int64
+	for _, text := range textSlice {
+		likeText := "%" + text + "%"
+		tx = DB.Model(&User{}).Limit(split).Offset(offset).Preload("Posts").Where(fmt.Sprintf("%s LIKE ? ", column), likeText)
+	}
+	result := tx.Find(&users).Limit(-1).Offset(-1).Count(&count)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return users, 0, result.Error
+	}
+	return users, count, nil
+}
+
+func ChunkUser(page int) ([]User, int64, error) {
+	var users []User
+	var count int64
+	split := 10
+	offset := (page -1) * split
+	result := DB.Limit(split).Offset(offset).Preload("Posts").Find(&users).Limit(-1).Offset(-1).Count(&count)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return users, 0, result.Error
+	}
+	return users, count, nil
 }
 
 func (u *User)Validate(r *http.Request) error {
@@ -120,7 +170,7 @@ func (u *User)TryToLogin(w http.ResponseWriter, r *http.Request) (error) {
 	}
 
 	// Password check
-	if u.Password != Encrypt(r.Form.Get("password")) {
+	if u.Password != crypto.Encrypt(r.Form.Get("password")) {
 		message := "password is wrong"
 		err := errors.New(message)
 		return err
@@ -273,7 +323,7 @@ func (u *User)CheckLoginFormBlank(r *http.Request) error {
 }
 
 func (u *User)MatchPassword(r *http.Request) error {
-	currentPassword := Encrypt(r.FormValue("current-password"))
+	currentPassword := crypto.Encrypt(r.FormValue("current-password"))
 	if u.Password != currentPassword {
 		message := "current password is wrong"
 		err := errors.New(message)
@@ -283,7 +333,7 @@ func (u *User)MatchPassword(r *http.Request) error {
 }
 
 func (u *User)CheckImage(r *http.Request) error {
-	currentPassword := Encrypt(r.FormValue("current-password"))
+	currentPassword := crypto.Encrypt(r.FormValue("current-password"))
 	if u.Password != currentPassword {
 		message := "current password is wrong"
 		err := errors.New(message)

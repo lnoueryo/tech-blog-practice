@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"helloworld/modules/crypto"
 	"net/http"
 	"path/filepath"
 	"time"
@@ -20,6 +21,7 @@ type Post struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+
 func NewPost(r *http.Request) (Post, error) {
 	var post Post
 	err := r.ParseForm()
@@ -31,7 +33,7 @@ func NewPost(r *http.Request) (Post, error) {
 		err := errors.New(message)
 		return post, err
     }
-	randStr, _ := MakeRandomStr(20)
+	randStr, _ := crypto.MakeRandomStr(20)
 	newFileName := randStr + filepath.Ext(fileHeader.Filename)
 	s := GetSession(r)
 	userId := s.UserId
@@ -47,6 +49,16 @@ func PostAll() ([]Post, error) {
 	}
 	return posts, nil
 }
+
+func PostLatest(limit int) ([]Post, error) {
+	var posts []Post
+	result := DB.Order("created_at desc").Limit(limit).Preload("User").Find(&posts)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return posts, result.Error
+	}
+	return posts, nil
+}
+
 
 func (p *Post) Create() error {
 	result := DB.Create(p)

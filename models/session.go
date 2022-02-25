@@ -2,13 +2,14 @@ package models
 
 import (
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/gob"
+	"encoding/json"
 	"fmt"
+	"helloworld/modules/crypto"
 	"log"
 	"net/http"
 	"os"
-	"encoding/base64"
-	"encoding/json"
 	"time"
 )
 
@@ -34,6 +35,10 @@ func CreateSession(u User) (cryptext string, err error) {
 		Image: u.Image,
 		CreatedAt: time.Now(),
 	}
+	// fInfo, _ := os.Stat("/session")
+	// if !fInfo.IsDir() {
+	// 	os.Mkdir("session", 0777)
+	// }
 	filepath := fmt.Sprintf("./session/%v.txt", hashedSessionId)
     f, err := os.Create(filepath)
     if err != nil {
@@ -78,7 +83,7 @@ func DeliverSession(r *http.Request) (Session) {
 
 func (s *Session)GenerateCSRFToken(r *http.Request) (error) {
 	filepath := fmt.Sprintf("./session/%v.txt", s.Id)
-	s.CSRFToken, _ = MakeRandomStr(32)
+	s.CSRFToken, _ = crypto.MakeRandomStr(32)
     f, err := os.Create(filepath)
     if err != nil {
         return err

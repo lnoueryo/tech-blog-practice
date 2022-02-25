@@ -3,7 +3,8 @@ package controller
 import (
 	"errors"
 	"helloworld/models"
-	// "helloworld/modules/image"
+	"helloworld/modules/crypto"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -16,20 +17,40 @@ import (
 type Users struct {}
 
 func (u *Users)Index(w http.ResponseWriter, r *http.Request) {
+
 	path := strings.TrimPrefix(r.URL.Path, "/users/") // URLを切り取ってなんとかする
 	i := strings.Index(path, "/")
 	stringMap := make(map[string]string)
 	if i == -1 {
-		var users []models.User
 		if path == "" { //usersのみ
-			result := DB.Preload("Posts").Find(&users)
-			if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-				errorlog.Print(result)
+			var users []models.User
+			var split int64 = 10
+			searchColumn := "name"
+			query := r.URL.Query()
+			if len(query["page"]) == 0 || len(query["name"]) == 0 {
+				http.Redirect(w, r, "/users/?name=&page=1", http.StatusFound)
+				return
 			}
+			users, count, _ := models.SearchUserLike(r, searchColumn)
+			pageNum, _ := strconv.Atoi(query["page"][0])
+			keyword := query["name"][0]
+			next := pageNum + 1
+			previous := pageNum - 1
+			pagination := math.Floor(float64(count / split))
+			var s []int
+			for i := 0; i <= int(pagination); i++ {
+				s = append(s, i + 1)
+			}
+			if len(s) == 0 {
+				s = append(s, 1)
+			}
+			infolog.Print(s)
+			page := Page{keyword, pageNum, next, previous, int(pagination), s}
 			RenderTemplate(w, r, "users.html", &TemplateData{
 				StringMap: stringMap,
 				Users: users,
 				Session: models.DeliverSession(r),
+				Page: page,
 			})
 			return
 		}
@@ -136,7 +157,7 @@ func (us *Users)Update(w http.ResponseWriter, r *http.Request) {
 	}
 
     _, fileHeader, err := r.FormFile("image"); if err == nil {
-		randStr, _ := models.MakeRandomStr(20)
+		randStr, _ := crypto.MakeRandomStr(20)
 		u.Image = randStr + filepath.Ext(fileHeader.Filename)
 		dirName := "user"
 		err = StoreImage(r, dirName, u.Image); if err != nil {
