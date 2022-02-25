@@ -30,6 +30,10 @@ a {
   width: 48%;
 }
 
+.w40 {
+  width: 40%;
+}
+
 .w30 {
   width: 30%;
 }
@@ -52,7 +56,6 @@ a {
 
 .user-card {
   padding: 10px;
-  width: 15rem;
   color: black;
 }
 
@@ -65,15 +68,11 @@ a {
 }
 
 .left-side {
-  width: 25%;
-}
-
-.right-side {
-  width: 25%;
+  width: 40%;
 }
 
 .main {
-  width: 50%;
+  width: 60%;
 }
 
 .user-bottom {

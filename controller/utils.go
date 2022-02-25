@@ -13,6 +13,14 @@ import (
 	"gorm.io/gorm"
 )
 
+type Page struct {
+	Keyword   string
+	Current   int
+	Next      int
+	Previous  int
+	TotalNum  int
+	PageSlice []int
+}
 type TemplateData struct {
 	StringMap map[string]string
 	IntMap    map[string]string
@@ -25,6 +33,7 @@ type TemplateData struct {
 	Users     []models.User
 	Posts	  []models.Post
 	Session	  models.Session
+	Page      Page
 	// Form      *forms.Form
 }
 
@@ -36,7 +45,7 @@ var DB *gorm.DB
 func init() {
 	infolog = config.App.InfoLog
 	errorlog = config.App.ErrorLog
-	DB = models.DB
+	DB = config.DB
 }
 
 func RenderTemplate(w http.ResponseWriter, r *http.Request, tmpl string, td *TemplateData) {

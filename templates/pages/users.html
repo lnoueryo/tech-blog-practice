@@ -2,27 +2,64 @@
 
 {{define "content"}}
 <div class="container">
-  <div class="px-2">
-    {{range $index, $user := .Users}}
-    <a style="text-decoration: none;" href="">
-      <div class="card user-card">
-        <div class="d-flex align-items-center">
-          <div class="w10 text-center">
-            <div>{{$user.Id}}</div>
-          </div>
-          <div class="w20 text-center">
-            <img src="/media/user/{{$user.Image}}" alt="カードの画像" class="avatar card-img-top">
-          </div>
-          <div class="w20 text-center">
-            <div>{{$user.Name}}</div>
-          </div>
-          <div class="font14 w50 text-center">
-            <div>{{len $user.Posts}}投稿</div>
+  <div class="">
+    <div class="px-2 d-flex flex-wrap px-4">
+      {{range $index, $user := .Users}}
+      <a style="text-decoration: none;margin: 5px;max-width: 400px;width: 100%;" href="/users/{{ $user.Id }}">
+        <div class="card user-card" style="height: 100%;width: 100%;">
+          <div class="d-flex align-items-center" style="height: 100%">
+            <div class="w10 text-center">
+              <div>{{$user.Id}}</div>
+            </div>
+            <div class="w20 text-center">
+              <img src="/media/user/{{$user.Image}}" alt="カードの画像" class="avatar card-img-top">
+            </div>
+            <div class="w20 text-center">
+              <div>{{$user.Name}}</div>
+            </div>
+            <div class="font14 w50 text-center">
+              <div>{{len $user.Posts}}投稿</div>
+            </div>
           </div>
         </div>
-      </div>
-    </a>
-    {{end}}
+      </a>
+      {{end}}
+    </div>
+    <div class="px-4 d-flex align-items-center justify-content-center" style="margin: 5px;margin-top: 30px">
+      <form action="/users/" method="get">
+        {{ if eq .Page.Previous 0 }}
+        <input class="btn btn-outline-primary" type="submit" value="Previous" disabled>
+        {{ else }}
+        <input class="btn btn-outline-primary" type="submit" value="Previous">
+        {{ end }}
+        <input type="hidden" name="name" value="{{ .Page.Keyword }}">
+        <input type="hidden" name="page" value="{{ .Page.Previous }}">
+      </form>
+      {{ $x := .Page.Keyword }}
+      {{ $y := .Page.Current }}
+      {{ range $i, $v := .Page.PageSlice }}
+      <form action="/users/" method="get">
+        {{if eq $v $y}}
+        <input style="border: initial;background: initial;color: black;" type="submit" value="{{ $v }}" disabled>
+        {{ else }}
+        <input style="border: initial;background: initial;color: #0d6efd;" type="submit" value="{{ $v }}">
+        {{ end }}
+        <input type="hidden" name="name" value="{{ $x }}">
+        <input type="hidden" name="page" value="{{ $v }}">
+      </form>
+      {{ end }}
+      <form action="/users/" method="get">
+        {{ $x := .Page.Current}}
+        {{ $y := len .Page.PageSlice }}
+        {{ if eq $x $y}}
+        <input class="btn btn-outline-primary" type="submit" value="Next" disabled>
+        {{ else }}
+        <input class="btn btn-outline-primary" type="submit" value="Next">
+        {{ end }}
+        <input type="hidden" name="name" value="{{ .Page.Keyword }}">
+        <input type="hidden" name="page" value="{{ .Page.Next }}">
+      </form>
+    </div>
   </div>
 </div>
 
