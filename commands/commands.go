@@ -17,6 +17,20 @@ func CMD() {
 	object = flag.Arg(1)
 	name = flag.Arg(2)
 	arg1 = flag.Arg(3)
+
+	if verb == "" {
+		RunServer()
+		return
+	}
+
+	if verb == "deploy" {
+		Deploy()
+	}
+
+	if verb == "watch" && object == "" {
+		Watch()
+		return
+	}
 	if verb == "make" {
 		MakeCMD()
 		return
